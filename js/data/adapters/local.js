@@ -22,6 +22,13 @@ export function createLocalAdapter() {
       save(LS.history, trimmed);
       return trimmed;
     },
+    async updateMatch(id, patch) {
+      const h = load(LS.history, []);
+      const i = h.findIndex(m => m.id === id);
+      if (i >= 0) h[i] = {...h[i], ...patch};
+      save(LS.history, h);
+      return h;
+    },
     async deleteMatch(id) {
       const h = load(LS.history, []).filter(m => m.id !== id);
       save(LS.history, h);

@@ -184,8 +184,11 @@
   .sum-score input::-webkit-outer-spin-button,.sum-score input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .sum-score input[type=number]{-moz-appearance:textfield;appearance:textfield}
   .sum-score .sc-colon{font-size:20px;font-weight:900;color:var(--muted)}
-  .hist td.score{font-weight:700;white-space:nowrap;font-size:14px}
+  .hist td.score{font-weight:700;white-space:nowrap;font-size:14px;cursor:pointer}
+  .hist td.score:hover{background:rgba(255,255,255,.03)}
   .hist td.score .w{color:var(--gold)}
+  .hist td.score input{width:44px;height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;text-align:center;font-size:13px;font-weight:700}
+  .hist td.score input:focus{border-color:var(--teal);outline:none}
 
   /* ===== manual add ===== */
   [hidden]{display:none!important}
@@ -706,7 +709,7 @@ function renderHistory(){
     const tr=document.createElement('tr');
     tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m">${ds}${h.manual?' ✍':''}</td>
       <td class="mp"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
-      <td class="score rj">${h.score?`<span class="${h.winner==='A'?'w':''}">${h.score.A}</span> : <span class="${h.winner==='B'?'w':''}">${h.score.B}</span>`:'<span style="color:var(--muted)">–</span>'}</td>
+      <td class="score rj" data-sc="${h.id}" title="클릭해서 스코어 입력/수정">${h.score?`<span class="${h.winner==='A'?'w':''}">${h.score.A}</span> : <span class="${h.winner==='B'?'w':''}">${h.score.B}</span>`:'<span style="color:var(--muted)">–</span>'}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
       <td><span class="pill ${h.teams.B.side.toLowerCase()}">${h.teams.B.side}</span> ${esc(h.teams.B.name)}</td>
       <td class="sm hide-m">${esc(pl('A'))} <span style="color:var(--muted)">vs</span> ${esc(pl('B'))}</td>
@@ -714,6 +717,27 @@ function renderHistory(){
     tb.appendChild(tr);
   });
   tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{state.history.splice(+b.dataset.del,1);save(LS.history,state.history);renderHistory();}));
+  tb.querySelectorAll('td[data-sc]').forEach(td=>td.addEventListener('click',()=>editScore(td.dataset.sc,td)));
+}
+// 기록 표의 스코어 칸 클릭 → 인라인 수정 (기존 기록에 스코어 추가/변경)
+function editScore(id,td){
+  if(td.querySelector('input')) return; // 이미 편집 중
+  const h=state.history.find(x=>x.id===id); if(!h) return;
+  td.innerHTML=`<input type="number" min="0" max="99" value="${h.score?h.score.A:''}" placeholder="A"> : <input type="number" min="0" max="99" value="${h.score?h.score.B:''}" placeholder="B"> <button class="btn teal sm" title="저장">✓</button>`;
+  const [ia,ib]=td.querySelectorAll('input'), btn=td.querySelector('button');
+  const done=()=>{
+    const sa=ia.value.trim(), sb=ib.value.trim();
+    if(sa===''&&sb===''){ h.score=null; h.winner=null; }
+    else if(sa!==''&&sb!==''){ h.score={A:+sa,B:+sb}; h.winner=h.score.A>h.score.B?'A':h.score.B>h.score.A?'B':'draw'; }
+    else return toast('양쪽 스코어를 모두 입력해주세요 (비우려면 둘 다 비우기)');
+    save(LS.history,state.history); renderHistory(); toast('스코어 저장됨');
+  };
+  btn.addEventListener('click',e=>{e.stopPropagation();done();});
+  [ia,ib].forEach(inp=>inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter')done();
+    if(e.key==='Escape')renderHistory();
+  }));
+  ia.focus();
 }
 function exportJSON(){
   const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),schemaVersion:2,maps:MAPS.map(({id,en,ko})=>({id,en,ko})),matches:state.history},null,2)],{type:'application/json'});

@@ -23,7 +23,7 @@ function render() {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td class="sm">${state.history.length - i}</td><td class="sm hide-m">${ds}${h.manual ? ' ✍' : ''}</td>
       <td class="mp"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
-      <td class="score rj">${sc}</td>
+      <td class="score rj" data-sc="${h.id}" title="클릭해서 스코어 입력/수정">${sc}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
       <td><span class="pill ${h.teams.B.side.toLowerCase()}">${h.teams.B.side}</span> ${esc(h.teams.B.name)}</td>
       <td class="sm hide-m">${esc(pl('A'))} <span style="color:var(--muted)">vs</span> ${esc(pl('B'))}</td>
@@ -34,6 +34,32 @@ function render() {
     state.history = await adapter.deleteMatch(b.dataset.del);
     render();
   }));
+  tb.querySelectorAll('td[data-sc]').forEach(td => td.addEventListener('click', () => editScore(td.dataset.sc, td)));
+}
+
+/* 기록 표의 스코어 칸 클릭 → 인라인 수정 (기존 기록에 스코어 추가/변경) */
+function editScore(id, td) {
+  if (td.querySelector('input')) return; // 이미 편집 중
+  const h = state.history.find(x => x.id === id); if (!h) return;
+  td.innerHTML = `<input type="number" min="0" max="99" value="${h.score ? h.score.A : ''}" placeholder="A"> : <input type="number" min="0" max="99" value="${h.score ? h.score.B : ''}" placeholder="B"> <button class="btn teal sm" title="저장">✓</button>`;
+  const [ia, ib] = td.querySelectorAll('input'), btn = td.querySelector('button');
+  const done = async () => {
+    const sa = ia.value.trim(), sb = ib.value.trim();
+    let patch;
+    if (sa === '' && sb === '') patch = {score: null, winner: null};
+    else if (sa !== '' && sb !== '') {
+      const score = {A: +sa, B: +sb};
+      patch = {score, winner: score.A > score.B ? 'A' : score.B > score.A ? 'B' : 'draw'};
+    } else return toast('양쪽 스코어를 모두 입력해주세요 (비우려면 둘 다 비우기)');
+    state.history = await adapter.updateMatch(id, patch);
+    render(); toast('스코어 저장됨');
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); done(); });
+  [ia, ib].forEach(inp => inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') done();
+    if (e.key === 'Escape') render();
+  }));
+  ia.focus();
 }
 
 function exportJSON() {
