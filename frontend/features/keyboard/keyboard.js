@@ -1,5 +1,5 @@
 /* feature: keyboard — Space = 현재 단계의 랜덤 액션 (입력 중이 아닐 때) */
-import { emit } from '../core/bus.js';
+import { emit } from '../../shared/bus.js';
 
 export const id = 'keyboard';
 

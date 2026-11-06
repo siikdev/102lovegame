@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAL Balance — 팀 밸런스 사다리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/layout.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="features/teams/teams.css">
+<link rel="stylesheet" href="features/maps/maps.css">
+<link rel="stylesheet" href="features/sides/sides.css">
+<link rel="stylesheet" href="features/summary/summary.css">
+<link rel="stylesheet" href="features/history/history.css">
+</head>
+<body>
+
+<header>
+  <div class="hwrap">
+    <div class="logo"><span class="mark"></span><span class="v">VAL</span>&nbsp;BALANCE</div>
+    <nav id="nav">
+      <button class="tab active" data-step="1" data-feature="teams"><span class="n"><span>1</span></span><span class="lbl">팀 밸런스</span></button>
+      <button class="tab" data-step="2" data-feature="maps"><span class="n"><span>2</span></span><span class="lbl">맵 선택</span></button>
+      <button class="tab" data-step="3" data-feature="sides"><span class="n"><span>3</span></span><span class="lbl">공수 결정</span></button>
+    </nav>
+    <div class="hright">
+      <button class="btn ghost sm" id="btnReset">새 매치</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= STEP 1: 팀 밸런스 ================= -->
+  <section class="step show" id="step1" data-feature="teams">
+    <div class="sec-head">
+      <h2>팀 밸런스 <small>티어별로 2명씩 입력 → 각 팀에 티어당 1명씩 랜덤 배정</small></h2>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="btnClearPlayers">입력 초기화</button>
+      </div>
+    </div>
+
+    <div class="tier-grid" id="tierGrid"></div>
+
+    <div class="btn-row" style="margin-top:16px;justify-content:center">
+      <button class="btn primary lg" id="btnShuffle">🎲 사다리 돌리기</button>
+      <button class="btn ghost lg" id="btnReshuffle" disabled>다시 섞기</button>
+      <button class="btn teal lg" id="btnToMap" disabled>맵 선택으로 →</button>
+    </div>
+    <p class="hint" style="text-align:center;margin-top:8px">빈 칸이 있어도 돌릴 수 있습니다 (빈 자리는 "-" 로 표시). <span class="kbd">Enter</span> 로 다음 칸 이동</p>
+
+    <div class="team-wrap">
+      <div class="team a" id="teamA">
+        <div class="th"><input id="nameA" value="TEAM A" maxlength="16"><span class="side-tag" id="tagA"></span></div>
+        <ul id="listA"></ul>
+        <div class="ladder" id="ladderA"></div>
+      </div>
+      <div class="vs rj" id="vs">VS</div>
+      <div class="team b" id="teamB">
+        <div class="th"><input id="nameB" value="TEAM B" maxlength="16"><span class="side-tag" id="tagB"></span></div>
+        <ul id="listB"></ul>
+        <div class="ladder" id="ladderB"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STEP 2: 맵 선택 ================= -->
+  <section class="step" id="step2" data-feature="maps">
+    <div class="sec-head">
+      <h2>맵 선택 <small>맵 풀에서 랜덤 선택. 마음에 안 들면 다시 돌리고, 확정하면 공수 결정으로 넘어갑니다</small></h2>
+    </div>
+    <div class="map-layout">
+      <div>
+        <div class="map-stage" id="mapStage">
+          <div class="grid-bg"></div>
+          <span class="lock">LOCKED</span>
+          <div class="lbl">Random Map</div>
+          <div class="mname rj" id="mapName">?</div>
+          <div class="mko" id="mapKo">맵 풀에서 랜덤으로 뽑습니다</div>
+        </div>
+        <div class="btn-row" style="margin-top:14px;justify-content:center">
+          <button class="btn primary lg" id="btnRollMap">🗺️ 맵 돌리기</button>
+          <button class="btn ghost lg" id="btnRerollMap" disabled>다시 돌리기</button>
+          <button class="btn teal lg" id="btnLockMap" disabled>맵 확정 → 공수 결정</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><h3>맵 풀 <span class="hint" id="poolCount"></span></h3>
+          <div class="btn-row"><button class="btn ghost sm" id="poolAll">전체</button><button class="btn ghost sm" id="poolActive">현 로테</button></div>
+        </div>
+        <div class="cb"><div class="pool" id="pool"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STEP 3: 공수 결정 ================= -->
+  <section class="step" id="step3" data-feature="sides">
+    <div class="sec-head">
+      <h2>공수 결정 <small id="sideSub">코인을 던져 첫 라운드 공격/수비를 랜덤으로 정합니다</small></h2>
+    </div>
+    <div class="side-layout">
+      <div class="side-card" id="sideA"><div class="tn" id="sideNameA">TEAM A</div><div class="sd rj" id="sideSdA">—</div><div class="sk" id="sideSkA">&nbsp;</div></div>
+      <div class="coin idle" id="coin"><div class="inner"><div class="f atk rj">ATK</div><div class="f def rj">DEF</div></div></div>
+      <div class="side-card" id="sideB"><div class="tn" id="sideNameB">TEAM B</div><div class="sd rj" id="sideSdB">—</div><div class="sk" id="sideSkB">&nbsp;</div></div>
+    </div>
+    <div class="btn-row" style="margin-top:18px;justify-content:center">
+      <button class="btn primary lg" id="btnFlip">🪙 공수 정하기</button>
+      <button class="btn ghost" id="btnReflip" disabled>다시 던지기</button>
+    </div>
+
+    <!-- 매치 요약 (feature: summary) -->
+    <div class="summary" id="summary" style="display:none" data-feature="summary">
+      <div class="sh"><h3>매치 요약</h3>
+        <div class="btn-row">
+          <button class="btn ghost sm" id="btnRematch">🔁 같은 팀 한판 더</button>
+          <button class="btn ghost sm" id="btnCopy">📋 결과 복사</button>
+          <button class="btn teal sm" id="btnSave">💾 기록 저장</button>
+        </div>
+      </div>
+      <div class="sum-grid">
+        <div class="sum-team" id="sumA"></div>
+        <div class="sum-team" id="sumB"></div>
+      </div>
+      <div class="sum-score">
+        <span class="sc-name" id="scNameA"></span>
+        <input id="scoreA" type="number" min="0" max="99" placeholder="–" title="팀 A 스코어">
+        <span class="sc-colon rj">:</span>
+        <input id="scoreB" type="number" min="0" max="99" placeholder="–" title="팀 B 스코어">
+        <span class="sc-name" id="scNameB"></span>
+      </div>
+      <div class="sum-map" id="sumMap"></div>
+    </div>
+  </section>
+
+  <!-- ================= 매치 기록 (feature: history) ================= -->
+  <div class="hist card" data-feature="history">
+    <div class="ch"><h3>매치 기록 <span class="hint">(브라우저 로컬 저장 · JSON 내보내기로 백업)</span></h3>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="btnManual">✍️ 수동 추가</button>
+        <button class="btn ghost sm" id="btnExport">JSON 내보내기</button>
+        <button class="btn ghost sm" id="btnClearHist">기록 삭제</button>
+      </div>
+    </div>
+    <div class="manual-form" id="manualForm" hidden>
+      <div class="mf-grid">
+        <label>맵<select id="mfMap"></select></label>
+        <label>일시<input id="mfDate" type="datetime-local"></label>
+        <label>팀 A 이름<input id="mfNameA" maxlength="16"></label>
+        <label>팀 B 이름<input id="mfNameB" maxlength="16"></label>
+        <label>팀 A 시작<select id="mfSideA"><option value="ATK">공격 (ATK)</option><option value="DEF">수비 (DEF)</option></select></label>
+        <label>스코어 (A : B)<span class="mf-score"><input id="mfScoreA" type="number" min="0" max="99" placeholder="A"><span>:</span><input id="mfScoreB" type="number" min="0" max="99" placeholder="B"></span></label>
+        <label class="wide">팀 A 선수 (쉼표 구분 · 선택)<input id="mfPlayersA" placeholder="예: 플레이어1, 플레이어2"></label>
+        <label class="wide">팀 B 선수 (쉼표 구분 · 선택)<input id="mfPlayersB" placeholder=""></label>
+      </div>
+      <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
+        <button class="btn ghost sm" id="mfCancel">취소</button>
+        <button class="btn teal sm" id="mfSave">기록 추가</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>#</th><th class="hide-m">일시</th><th>맵</th><th>스코어</th><th>팀 A</th><th>팀 B</th><th class="hide-m">선수</th><th></th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app/main.js"></script>
+</body>
+</html>

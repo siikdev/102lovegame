@@ -1,10 +1,10 @@
 /* feature: summary — 매치 요약 · 스코어 입력 · 기록 저장 · 같은 팀 한판 더 */
-import { $, esc, toast } from '../core/dom.js';
-import { state, mapById } from '../core/state.js';
-import { persistSession } from '../core/session.js';
-import { setStep } from '../app/steps.js';
-import { adapter } from '../data/index.js';
-import { on, emit } from '../core/bus.js';
+import { $, esc, toast } from '../../shared/dom.js';
+import { state, mapById } from '../../shared/state.js';
+import { persistSession } from '../../shared/session.js';
+import { setStep } from '../../app/steps.js';
+import { adapter } from '../../data/index.js';
+import { on, emit } from '../../shared/bus.js';
 
 export const id = 'summary';
 

@@ -3,7 +3,7 @@
 import { LS, load, save } from './storage.js';
 import { state } from './state.js';
 import { $ } from './dom.js';
-import { APP_CONFIG } from '../config/app.config.js';
+import { APP_CONFIG } from '../app/app.config.js';
 
 export function persistSession() {
   if (APP_CONFIG.features.sessionRestore === false) return;

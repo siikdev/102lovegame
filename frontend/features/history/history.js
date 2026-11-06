@@ -1,8 +1,8 @@
 /* feature: history — 매치 기록 테이블 · 수동 추가 · JSON 내보내기 */
-import { $, esc, toast } from '../core/dom.js';
-import { state, mapById } from '../core/state.js';
-import { adapter } from '../data/index.js';
-import { on } from '../core/bus.js';
+import { $, esc, toast } from '../../shared/dom.js';
+import { state, mapById } from '../../shared/state.js';
+import { adapter } from '../../data/index.js';
+import { on } from '../../shared/bus.js';
 
 export const id = 'history';
 

@@ -1,8 +1,8 @@
 /* feature: sides — 3단계 공수 코인토스 */
-import { $, rnd } from '../core/dom.js';
-import { state, mapById } from '../core/state.js';
-import { persistSession } from '../core/session.js';
-import { on, emit } from '../core/bus.js';
+import { $, rnd } from '../../shared/dom.js';
+import { state, mapById } from '../../shared/state.js';
+import { persistSession } from '../../shared/session.js';
+import { on, emit } from '../../shared/bus.js';
 
 export const id = 'sides';
 

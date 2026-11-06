@@ -2,20 +2,20 @@
    main.js — 엔트리. 설정을 읽어 켜진 기능만 조립한다.
    새 기능 추가 절차는 .claude/skills/new-feature/SKILL.md 참고.
    ========================================================= */
-import { APP_CONFIG } from './config/app.config.js';
-import { state } from './core/state.js';
-import { $, toast } from './core/dom.js';
-import { emit } from './core/bus.js';
-import { adapter } from './data/index.js';
-import { restoreSession } from './core/session.js';
-import { setStep, initNav } from './app/steps.js';
+import { APP_CONFIG } from './app.config.js';
+import { state } from '../shared/state.js';
+import { $, toast } from '../shared/dom.js';
+import { emit } from '../shared/bus.js';
+import { adapter } from '../data/index.js';
+import { restoreSession } from '../shared/session.js';
+import { setStep, initNav } from './steps.js';
 
-import * as teams from './features/teams.js';
-import * as maps from './features/maps.js';
-import * as sides from './features/sides.js';
-import * as summary from './features/summary.js';
-import * as history from './features/history.js';
-import * as keyboard from './features/keyboard.js';
+import * as teams from '../features/teams/teams.js';
+import * as maps from '../features/maps/maps.js';
+import * as sides from '../features/sides/sides.js';
+import * as summary from '../features/summary/summary.js';
+import * as history from '../features/history/history.js';
+import * as keyboard from '../features/keyboard/keyboard.js';
 
 const FEATURES = [teams, maps, sides, summary, history, keyboard];
 const enabled = f => APP_CONFIG.features[f.id] !== false;

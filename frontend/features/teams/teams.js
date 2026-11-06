@@ -1,10 +1,10 @@
 /* feature: teams — 1단계 티어 입력 · 팀 랜덤 배정(사다리) */
-import { $, $$, esc, rnd, toast } from '../core/dom.js';
-import { state, TIERS } from '../core/state.js';
-import { LS, save } from '../core/storage.js';
-import { persistSession } from '../core/session.js';
-import { setStep } from '../app/steps.js';
-import { on, emit } from '../core/bus.js';
+import { $, $$, esc, rnd, toast } from '../../shared/dom.js';
+import { state, TIERS } from '../../shared/state.js';
+import { LS, save } from '../../shared/storage.js';
+import { persistSession } from '../../shared/session.js';
+import { setStep } from '../../app/steps.js';
+import { on, emit } from '../../shared/bus.js';
 
 export const id = 'teams';
 

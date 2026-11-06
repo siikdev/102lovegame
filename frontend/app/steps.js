@@ -1,7 +1,7 @@
 /* 단계 내비게이션 — feature 를 import 하지 않음 (순환 의존 방지) */
-import { $$, toast } from '../core/dom.js';
-import { state } from '../core/state.js';
-import { persistSession } from '../core/session.js';
+import { $$, toast } from '../shared/dom.js';
+import { state } from '../shared/state.js';
+import { persistSession } from '../shared/session.js';
 
 export function setStep(n) {
   state.step = n;

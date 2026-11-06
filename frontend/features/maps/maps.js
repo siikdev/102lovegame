@@ -1,10 +1,10 @@
 /* feature: maps — 2단계 맵 룰렛 · 맵 풀 관리 */
-import { $, rnd, toast } from '../core/dom.js';
-import { state, mapById } from '../core/state.js';
-import { LS, save } from '../core/storage.js';
-import { persistSession } from '../core/session.js';
-import { setStep } from '../app/steps.js';
-import { on, emit } from '../core/bus.js';
+import { $, rnd, toast } from '../../shared/dom.js';
+import { state, mapById } from '../../shared/state.js';
+import { LS, save } from '../../shared/storage.js';
+import { persistSession } from '../../shared/session.js';
+import { setStep } from '../../app/steps.js';
+import { on, emit } from '../../shared/bus.js';
 
 export const id = 'maps';
 

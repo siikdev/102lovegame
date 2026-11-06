@@ -1,6 +1,6 @@
 /* local adapter — 목업용: 맵은 data/maps.json, 기록은 localStorage.
    모든 메서드는 async — http adapter 와 인터페이스 동일. */
-import { LS, load, save } from '../../core/storage.js';
+import { LS, load, save } from '../../shared/storage.js';
 
 const MAX_HISTORY = 200;
 const sortDesc = h => h.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
