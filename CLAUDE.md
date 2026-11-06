@@ -40,6 +40,13 @@ docs/         ARCHITECTURE.md · adr/
 - 색·간격은 `frontend/styles/base.css` 토큰만 사용
 - 새 기능 추가 절차: `/new-feature` 스킬
 
+## Git 관리 (상세: docs/GIT_WORKFLOW.md)
+
+- **기능별 세션 = 워크트리(`.claude/worktrees/<이름>`) = `feat/<기능>` 브랜치** (main 에서 분기)
+- 이력은 선형: rebase 후 `--ff-only` 병합만. merge commit·force-push 금지
+- 병합·rebase·태그는 브랜치 관리 세션/사용자만. 기능 세션은 자기 워크트리만 수정
+- 버전: `v0.MINOR.PATCH` 태그 (기능=MINOR, 수정=PATCH)
+
 ## 로드맵 (사용자 확정)
 
 1. 스크린샷 기반 결과 기록 (업로드 → 스탯 추출 → match_players)
