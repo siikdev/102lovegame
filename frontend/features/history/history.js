@@ -164,10 +164,31 @@ async function saveManual() {
   toast('수동 기록 추가됨');
 }
 
+/* JSON 가져오기 — 내보내기 파일(.json)을 병합 (id 중복 자동 건너뜀) */
+async function onImportFile(e) {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    const list = Array.isArray(data) ? data : data.matches; // 내보내기 포맷 or 순수 배열 둘 다 허용
+    if (!Array.isArray(list)) throw new Error('matches 배열이 없음');
+    const valid = list.filter(r => r && r.id && r.createdAt && r.teams);
+    const res = await adapter.importMatches(valid);
+    state.history = res.history;
+    render();
+    toast(`가져오기 완료: ${res.added}개 추가 · 중복 ${valid.length - res.added}개 건너뜀`);
+  } catch (err) {
+    console.error(err);
+    toast('가져오기 실패 — "JSON 내보내기"로 만든 파일인지 확인해주세요');
+  }
+  e.target.value = ''; // 같은 파일 재선택 허용
+}
+
 export async function init() {
   state.history = await adapter.getHistory();
   render();
 
+  $('#btnImport').addEventListener('click', () => $('#importFile').click());
+  $('#importFile').addEventListener('change', onImportFile);
   $('#btnExport').addEventListener('click', exportJSON);
   $('#btnClearHist').addEventListener('click', async () => {
     if (!state.history.length) return;

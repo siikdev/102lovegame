@@ -20,6 +20,7 @@
 | `updateMatch(id, patch)` | `PATCH /api/matches/:id` |
 | `deleteMatch(id)` | `DELETE /api/matches/:id` |
 | `clearHistory()` | `DELETE /api/matches` |
+| `importMatches(records)` | `POST /api/import` |
 
 추후 기능용 (frontend adapter 에 메서드 추가하며 확장):
 

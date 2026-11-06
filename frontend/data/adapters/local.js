@@ -39,5 +39,18 @@ export function createLocalAdapter() {
       save(LS.history, []);
       return [];
     },
+    /* JSON 내보내기 파일을 병합 가져오기 — id 중복은 건너뜀, 일시순 재정렬 */
+    async importMatches(records) {
+      const h = load(LS.history, []);
+      const ids = new Set(h.map(m => m.id));
+      let added = 0;
+      for (const r of records) {
+        if (!r || !r.id || ids.has(r.id)) continue;
+        h.push(r); ids.add(r.id); added++;
+      }
+      const sorted = sortDesc(h).slice(0, MAX_HISTORY);
+      save(LS.history, sorted);
+      return { history: sorted, added };
+    },
   };
 }

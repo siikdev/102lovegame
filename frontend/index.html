@@ -138,8 +138,10 @@
     <div class="ch"><h3>매치 기록 <span class="hint">(브라우저 로컬 저장 · JSON 내보내기로 백업)</span></h3>
       <div class="btn-row">
         <button class="btn ghost sm" id="btnManual">✍️ 수동 추가</button>
+        <button class="btn ghost sm" id="btnImport">📥 가져오기</button>
         <button class="btn ghost sm" id="btnExport">JSON 내보내기</button>
         <button class="btn ghost sm" id="btnClearHist">기록 삭제</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
       </div>
     </div>
     <div class="manual-form" id="manualForm" hidden>

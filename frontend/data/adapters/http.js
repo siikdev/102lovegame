@@ -1,6 +1,6 @@
 /* http adapter — 추후 백엔드 서버 / 외부 API / MCP 연동 지점.
    local.js 와 동일한 인터페이스를 유지할 것:
-   getMaps() / getHistory() / saveMatch(record) / updateMatch(id, patch) / deleteMatch(id) / clearHistory()
+   getMaps() / getHistory() / saveMatch(record) / updateMatch(id, patch) / deleteMatch(id) / clearHistory() / importMatches(records)
    레코드 스키마는 schemaVersion 필드로 버전 관리. */
 export function createHttpAdapter({ baseUrl }) {
   const notReady = () => {
@@ -15,5 +15,6 @@ export function createHttpAdapter({ baseUrl }) {
     updateMatch: notReady,
     deleteMatch: notReady,
     clearHistory: notReady,
+    importMatches: notReady,
   };
 }
