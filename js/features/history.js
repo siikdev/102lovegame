@@ -22,7 +22,7 @@ function render() {
       : '<span style="color:var(--muted)">–</span>';
     const tr = document.createElement('tr');
     tr.innerHTML = `<td class="sm">${state.history.length - i}</td><td class="sm hide-m">${ds}${h.manual ? ' ✍' : ''}</td>
-      <td class="mp"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
+      <td class="mp" data-mp="${h.id}" title="클릭해서 맵 수정"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
       <td class="score rj" data-sc="${h.id}" title="클릭해서 스코어 입력/수정">${sc}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
       <td><span class="pill ${h.teams.B.side.toLowerCase()}">${h.teams.B.side}</span> ${esc(h.teams.B.name)}</td>
@@ -35,6 +35,26 @@ function render() {
     render();
   }));
   tb.querySelectorAll('td[data-sc]').forEach(td => td.addEventListener('click', () => editScore(td.dataset.sc, td)));
+  tb.querySelectorAll('td[data-mp]').forEach(td => td.addEventListener('click', () => editMap(td.dataset.mp, td)));
+}
+
+/* 기록 표의 맵 칸 클릭 → 드롭다운으로 맵 수정 */
+function editMap(id, td) {
+  if (td.querySelector('select')) return; // 이미 편집 중
+  const h = state.history.find(x => x.id === id); if (!h) return;
+  td.innerHTML = `<select>${state.maps.map(m => `<option value="${m.id}" ${m.id === h.map ? 'selected' : ''}>${m.en} (${m.ko})</option>`).join('')}</select> <button class="btn teal sm" title="저장">✓</button>`;
+  const sel = td.querySelector('select'), btn = td.querySelector('button');
+  const done = async () => {
+    const m = mapById(sel.value); if (!m) return;
+    state.history = await adapter.updateMatch(id, {map: m.id, mapName: m.en});
+    render(); toast('맵 수정됨');
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); done(); });
+  sel.addEventListener('keydown', e => {
+    if (e.key === 'Enter') done();
+    if (e.key === 'Escape') render();
+  });
+  sel.focus();
 }
 
 /* 기록 표의 스코어 칸 클릭 → 인라인 수정 (기존 기록에 스코어 추가/변경) */

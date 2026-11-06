@@ -189,6 +189,10 @@
   .hist td.score .w{color:var(--gold)}
   .hist td.score input{width:44px;height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;text-align:center;font-size:13px;font-weight:700}
   .hist td.score input:focus{border-color:var(--teal);outline:none}
+  .hist td.mp{cursor:pointer}
+  .hist td.mp:hover{background:rgba(255,255,255,.03)}
+  .hist td.mp select{height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);padding:0 6px;color-scheme:dark}
+  .hist td.mp select:focus{border-color:var(--teal);outline:none}
 
   /* ===== manual add ===== */
   [hidden]{display:none!important}
@@ -708,7 +712,7 @@ function renderHistory(){
     const pl=k=>h.teams[k].players.map(p=>p.name).join(', ');
     const tr=document.createElement('tr');
     tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m">${ds}${h.manual?' ✍':''}</td>
-      <td class="mp"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
+      <td class="mp" data-mp="${h.id}" title="클릭해서 맵 수정"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
       <td class="score rj" data-sc="${h.id}" title="클릭해서 스코어 입력/수정">${h.score?`<span class="${h.winner==='A'?'w':''}">${h.score.A}</span> : <span class="${h.winner==='B'?'w':''}">${h.score.B}</span>`:'<span style="color:var(--muted)">–</span>'}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
       <td><span class="pill ${h.teams.B.side.toLowerCase()}">${h.teams.B.side}</span> ${esc(h.teams.B.name)}</td>
@@ -718,6 +722,25 @@ function renderHistory(){
   });
   tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{state.history.splice(+b.dataset.del,1);save(LS.history,state.history);renderHistory();}));
   tb.querySelectorAll('td[data-sc]').forEach(td=>td.addEventListener('click',()=>editScore(td.dataset.sc,td)));
+  tb.querySelectorAll('td[data-mp]').forEach(td=>td.addEventListener('click',()=>editMap(td.dataset.mp,td)));
+}
+// 기록 표의 맵 칸 클릭 → 드롭다운으로 맵 수정
+function editMap(id,td){
+  if(td.querySelector('select')) return; // 이미 편집 중
+  const h=state.history.find(x=>x.id===id); if(!h) return;
+  td.innerHTML=`<select>${MAPS.map(m=>`<option value="${m.id}" ${m.id===h.map?'selected':''}>${m.en} (${m.ko})</option>`).join('')}</select> <button class="btn teal sm" title="저장">✓</button>`;
+  const sel=td.querySelector('select'), btn=td.querySelector('button');
+  const done=()=>{
+    const m=mapById(sel.value); if(!m) return;
+    h.map=m.id; h.mapName=m.en;
+    save(LS.history,state.history); renderHistory(); toast('맵 수정됨');
+  };
+  btn.addEventListener('click',e=>{e.stopPropagation();done();});
+  sel.addEventListener('keydown',e=>{
+    if(e.key==='Enter')done();
+    if(e.key==='Escape')renderHistory();
+  });
+  sel.focus();
 }
 // 기록 표의 스코어 칸 클릭 → 인라인 수정 (기존 기록에 스코어 추가/변경)
 function editScore(id,td){
