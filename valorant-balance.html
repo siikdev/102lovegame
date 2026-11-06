@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAL Balance — 팀 밸런스 사다리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1419; --bg2:#151b22; --card:#1c242d; --card2:#232d38; --line:#2c3845;
+    --text:#e8edf3; --sub:#8b98a8; --muted:#5b6876;
+    --red:#ff4655; --red2:#ff6b77; --teal:#00c8c8; --teal2:#3ee0e0; --gold:#f5c451; --green:#3ddc84;
+    --atk:#ff4655; --def:#3b9cff;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input{font-family:inherit;color:inherit}
+  input:focus,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+  .rj{font-family:'Rajdhani','Noto Sans KR',sans-serif;letter-spacing:.04em}
+
+  /* ===== header ===== */
+  header{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--line)}
+  .hwrap{max-width:1180px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;gap:28px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:18px;letter-spacing:.02em;white-space:nowrap}
+  .logo .mark{width:28px;height:28px;background:var(--red);clip-path:polygon(0 0,100% 0,100% 55%,50% 100%,0 55%);display:inline-block}
+  .logo span.v{color:var(--red)}
+  nav{display:flex;gap:4px;height:100%}
+  nav .tab{height:100%;padding:0 14px;display:flex;align-items:center;gap:8px;color:var(--sub);font-weight:500;border-bottom:2px solid transparent;transition:.15s}
+  nav .tab .n{width:20px;height:20px;border-radius:50%;background:var(--card2);color:var(--sub);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+  nav .tab.active{color:var(--text);border-bottom-color:var(--red)}
+  nav .tab.active .n{background:var(--red);color:#fff}
+  nav .tab.done .n{background:var(--teal);color:#06282a}
+  nav .tab.done .n::before{content:'✓'}
+  nav .tab.done .n span{display:none}
+  .hright{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+  /* ===== layout ===== */
+  main{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+  section.step{display:none;animation:fade .25s ease}
+  section.step.show{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
+  .sec-head h2{font-size:20px;font-weight:900}
+  .sec-head h2 small{display:block;font-size:12px;color:var(--sub);font-weight:400;margin-top:2px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+  .card .ch{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .card .ch h3{font-size:14px;font-weight:700}
+  .card .cb{padding:16px}
+
+  /* ===== buttons ===== */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border-radius:8px;font-weight:700;font-size:14px;transition:.15s;white-space:nowrap}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--red);color:#fff}
+  .btn.primary:hover:not(:disabled){background:var(--red2)}
+  .btn.teal{background:var(--teal);color:#06282a}
+  .btn.teal:hover:not(:disabled){background:var(--teal2)}
+  .btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+  .btn.ghost:hover:not(:disabled){border-color:var(--sub)}
+  .btn.sm{height:32px;padding:0 12px;font-size:12px}
+  .btn.lg{height:48px;padding:0 28px;font-size:16px}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  /* ===== step 1: tiers ===== */
+  .tier-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .tier{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .tier .th{padding:10px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,70,85,.12),transparent)}
+  .tier .th .badge{width:26px;height:26px;border-radius:6px;background:var(--red);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:13px}
+  .tier .th input{background:transparent;border:none;font-weight:700;font-size:13px;width:100%;padding:2px 0;border-bottom:1px dashed transparent}
+  .tier .th input:hover,.tier .th input:focus{border-bottom-color:var(--muted);outline:none}
+  .tier .tb{padding:10px;display:flex;flex-direction:column;gap:8px}
+  .pin{position:relative}
+  .pin input{width:100%;height:38px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:0 10px 0 32px;font-size:13px}
+  .pin input::placeholder{color:var(--muted)}
+  .pin input:focus{border-color:var(--teal)}
+  .pin::before{content:attr(data-i);position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--muted);font-weight:700}
+
+  .team-wrap{display:grid;grid-template-columns:1fr 64px 1fr;gap:12px;margin-top:20px;align-items:stretch}
+  .team{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;position:relative}
+  .team.a{border-top:3px solid var(--teal)}
+  .team.b{border-top:3px solid var(--red)}
+  .team .th{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+  .team .th input{background:transparent;border:none;font-size:16px;font-weight:900;width:100%;border-bottom:1px dashed transparent;padding:2px 0}
+  .team .th input:hover,.team .th input:focus{border-bottom-color:var(--muted);outline:none}
+  .team.a .th{background:linear-gradient(90deg,rgba(0,200,200,.12),transparent)}
+  .team.b .th{background:linear-gradient(90deg,rgba(255,70,85,.12),transparent)}
+  .side-tag{font-size:11px;font-weight:900;padding:3px 8px;border-radius:4px;letter-spacing:.08em;display:none}
+  .side-tag.atk{background:var(--atk);color:#fff;display:inline-block}
+  .side-tag.def{background:var(--def);color:#fff;display:inline-block}
+  .team ul{list-style:none}
+  .team li{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .team li:last-child{border-bottom:none}
+  .team li .t{width:26px;height:26px;border-radius:6px;background:var(--card2);color:var(--sub);font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .team li .nm{font-weight:700;font-size:14px;min-height:21px}
+  .team li .nm.empty{color:var(--muted);font-weight:400}
+  .team li .nm.rolling{color:var(--gold)}
+  .team li .tl{margin-left:auto;font-size:11px;color:var(--muted)}
+  .vs{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:var(--muted)}
+  .vs.done{color:var(--gold)}
+
+  /* ladder lines */
+  .ladder{position:absolute;inset:0;pointer-events:none;opacity:0;transition:.2s}
+  .ladder.on{opacity:.25}
+  .ladder i{position:absolute;left:0;right:0;height:1px;background:repeating-linear-gradient(90deg,var(--teal) 0 6px,transparent 6px 12px);animation:slide .4s linear infinite}
+  @keyframes slide{to{background-position:12px 0}}
+
+  /* ===== step 2: map ===== */
+  .map-layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
+  .map-stage{min-height:360px;border-radius:var(--radius);border:1px solid var(--line);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:28px;background:var(--card)}
+  .map-stage::before{content:'';position:absolute;inset:0;background:var(--mapbg,linear-gradient(135deg,#1c242d,#0f1419));transition:background .3s}
+  .map-stage::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(10,14,18,.92));}
+  .map-stage .grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:40px 40px}
+  .map-stage>*{position:relative;z-index:1}
+  .map-stage .lbl{font-size:12px;color:var(--sub);font-weight:700;letter-spacing:.2em;text-transform:uppercase}
+  .map-stage .mname{font-size:56px;font-weight:700;line-height:1;margin:6px 0 4px;letter-spacing:.06em;text-transform:uppercase}
+  .map-stage .mname.rolling{color:var(--gold)}
+  .map-stage .mname.locked{color:var(--teal)}
+  .map-stage .mko{font-size:16px;color:var(--sub);font-weight:500}
+  .map-stage .lock{position:absolute;top:18px;right:18px;background:var(--teal);color:#06282a;font-weight:900;font-size:12px;padding:4px 10px;border-radius:4px;letter-spacing:.1em;display:none}
+  .map-stage.locked .lock{display:block}
+  .pool{display:flex;flex-direction:column;gap:6px}
+  .chip{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);transition:.15s;text-align:left;width:100%}
+  .chip:hover{border-color:var(--sub)}
+  .chip .sw{width:10px;height:10px;border-radius:2px;background:var(--mc,#888);flex-shrink:0}
+  .chip .en{font-weight:700;font-size:13px;letter-spacing:.04em}
+  .chip .ko{color:var(--sub);font-size:12px;margin-left:auto}
+  .chip .ck{width:16px;height:16px;border-radius:4px;border:1px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+  .chip.on .ck{background:var(--teal);border-color:var(--teal);color:#06282a}
+  .chip.on .ck::before{content:'✓'}
+  .chip.off{opacity:.45}
+  .chip.hot{border-color:var(--gold);background:rgba(245,196,81,.08)}
+
+  /* ===== step 3: side ===== */
+  .side-layout{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:8px}
+  .side-card{border-radius:var(--radius);border:1px solid var(--line);background:var(--card);padding:24px;text-align:center;min-height:200px;display:flex;flex-direction:column;justify-content:center;gap:8px;transition:.3s}
+  .side-card .tn{font-size:18px;font-weight:900}
+  .side-card .sd{font-size:40px;font-weight:700;letter-spacing:.1em;color:var(--muted)}
+  .side-card .sk{font-size:13px;color:var(--sub)}
+  .side-card.atk{border-color:var(--atk);background:linear-gradient(180deg,rgba(255,70,85,.14),var(--card))}
+  .side-card.atk .sd{color:var(--atk)}
+  .side-card.def{border-color:var(--def);background:linear-gradient(180deg,rgba(59,156,255,.14),var(--card))}
+  .side-card.def .sd{color:var(--def)}
+  .coin{width:120px;height:120px;perspective:600px}
+  .coin .inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 1.6s cubic-bezier(.2,.8,.2,1)}
+  .coin .f{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:30px;letter-spacing:.1em;backface-visibility:hidden;border:4px solid rgba(255,255,255,.15)}
+  .coin .f.atk{background:var(--atk);color:#fff}
+  .coin .f.def{background:var(--def);color:#fff;transform:rotateY(180deg)}
+  .coin.idle .inner{transform:rotateY(90deg)}
+
+  /* ===== summary ===== */
+  .summary{margin-top:20px;border-radius:var(--radius);border:1px solid var(--line);background:var(--card);overflow:hidden}
+  .summary .sh{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .summary .sh h3{font-size:14px;font-weight:700}
+  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .sum-team{padding:16px}
+  .sum-team+.sum-team{border-left:1px solid var(--line)}
+  .sum-team .ht{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:900;font-size:15px}
+  .sum-team .pl{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .sum-team .pl:last-child{border-bottom:none}
+  .sum-team .pl .tt{color:var(--muted);font-size:11px}
+  .sum-map{padding:12px 16px;border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;font-weight:700}
+  .sum-map .dot{width:10px;height:10px;border-radius:2px}
+  pre.copybox{display:none}
+
+  /* ===== history ===== */
+  .hist{margin-top:28px}
+  .hist table{width:100%;border-collapse:collapse;font-size:13px}
+  .hist th{font-size:11px;color:var(--sub);font-weight:700;text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);letter-spacing:.06em}
+  .hist td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  .hist tr:last-child td{border-bottom:none}
+  .hist .mp{font-weight:700}
+  .hist .sm{font-size:12px;color:var(--sub)}
+  .pill{display:inline-block;font-size:10px;font-weight:900;padding:2px 6px;border-radius:3px;color:#fff;letter-spacing:.06em}
+  .pill.atk{background:var(--atk)}.pill.def{background:var(--def)}
+  .empty-row{color:var(--muted);text-align:center;padding:24px}
+
+  /* ===== score ===== */
+  .sum-score{padding:14px 16px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:12px}
+  .sum-score .sc-name{font-weight:700;font-size:13px;color:var(--sub);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sum-score input{width:70px;height:46px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;text-align:center;font-size:22px;font-weight:700;font-family:'Rajdhani','Noto Sans KR',sans-serif}
+  .sum-score input:focus{border-color:var(--teal);outline:none}
+  .sum-score input::-webkit-outer-spin-button,.sum-score input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .sum-score input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  .sum-score .sc-colon{font-size:20px;font-weight:900;color:var(--muted)}
+  .hist td.score{font-weight:700;white-space:nowrap;font-size:14px}
+  .hist td.score .w{color:var(--gold)}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line);padding:10px 18px;border-radius:8px;font-weight:700;opacity:0;transition:.2s;pointer-events:none;z-index:99}
+  .toast.on{opacity:1;transform:translateX(-50%)}
+  .hint{font-size:12px;color:var(--sub)}
+  .kbd{font-size:11px;background:var(--card2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--sub)}
+
+  @media (max-width:980px){
+    .tier-grid{grid-template-columns:repeat(2,1fr)}
+    .map-layout{grid-template-columns:1fr}
+    .map-stage .mname{font-size:40px}
+  }
+  @media (max-width:640px){
+    .hwrap{gap:12px;padding:0 12px}
+    nav .tab{padding:0 8px;font-size:12px}
+    nav .tab .lbl{display:none}
+    main{padding:16px 12px 60px}
+    .tier-grid{grid-template-columns:1fr}
+    .team-wrap{grid-template-columns:1fr;gap:8px}
+    .vs{height:28px}
+    .side-layout{grid-template-columns:1fr}
+    .coin{margin:0 auto}
+    .sum-grid{grid-template-columns:1fr}
+    .sum-team+.sum-team{border-left:none;border-top:1px solid var(--line)}
+    .hist .hide-m{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hwrap">
+    <div class="logo"><span class="mark"></span><span class="v">VAL</span>&nbsp;BALANCE</div>
+    <nav id="nav">
+      <button class="tab active" data-step="1"><span class="n"><span>1</span></span><span class="lbl">팀 밸런스</span></button>
+      <button class="tab" data-step="2"><span class="n"><span>2</span></span><span class="lbl">맵 선택</span></button>
+      <button class="tab" data-step="3"><span class="n"><span>3</span></span><span class="lbl">공수 결정</span></button>
+    </nav>
+    <div class="hright">
+      <button class="btn ghost sm" id="btnReset">새 매치</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ================= STEP 1 ================= -->
+  <section class="step show" id="step1">
+    <div class="sec-head">
+      <h2>팀 밸런스 <small>티어별로 2명씩 입력 → 각 팀에 티어당 1명씩 랜덤 배정</small></h2>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="btnClearPlayers">입력 초기화</button>
+      </div>
+    </div>
+
+    <div class="tier-grid" id="tierGrid"></div>
+
+    <div class="btn-row" style="margin-top:16px;justify-content:center">
+      <button class="btn primary lg" id="btnShuffle">🎲 사다리 돌리기</button>
+      <button class="btn ghost lg" id="btnReshuffle" disabled>다시 섞기</button>
+      <button class="btn teal lg" id="btnToMap" disabled>맵 선택으로 →</button>
+    </div>
+    <p class="hint" style="text-align:center;margin-top:8px">빈 칸이 있어도 돌릴 수 있습니다 (빈 자리는 "-" 로 표시). <span class="kbd">Enter</span> 로 다음 칸 이동</p>
+
+    <div class="team-wrap">
+      <div class="team a" id="teamA">
+        <div class="th"><input id="nameA" value="TEAM A" maxlength="16"><span class="side-tag" id="tagA"></span></div>
+        <ul id="listA"></ul>
+        <div class="ladder" id="ladderA"></div>
+      </div>
+      <div class="vs rj" id="vs">VS</div>
+      <div class="team b" id="teamB">
+        <div class="th"><input id="nameB" value="TEAM B" maxlength="16"><span class="side-tag" id="tagB"></span></div>
+        <ul id="listB"></ul>
+        <div class="ladder" id="ladderB"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STEP 2 ================= -->
+  <section class="step" id="step2">
+    <div class="sec-head">
+      <h2>맵 선택 <small>맵 풀에서 랜덤 선택. 마음에 안 들면 다시 돌리고, 확정하면 공수 결정으로 넘어갑니다</small></h2>
+    </div>
+    <div class="map-layout">
+      <div>
+        <div class="map-stage" id="mapStage">
+          <div class="grid-bg"></div>
+          <span class="lock">LOCKED</span>
+          <div class="lbl">Random Map</div>
+          <div class="mname rj" id="mapName">?</div>
+          <div class="mko" id="mapKo">맵 풀에서 랜덤으로 뽑습니다</div>
+        </div>
+        <div class="btn-row" style="margin-top:14px;justify-content:center">
+          <button class="btn primary lg" id="btnRollMap">🗺️ 맵 돌리기</button>
+          <button class="btn ghost lg" id="btnRerollMap" disabled>다시 돌리기</button>
+          <button class="btn teal lg" id="btnLockMap" disabled>맵 확정 → 공수 결정</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><h3>맵 풀 <span class="hint" id="poolCount"></span></h3>
+          <div class="btn-row"><button class="btn ghost sm" id="poolAll">전체</button><button class="btn ghost sm" id="poolActive">현 로테</button></div>
+        </div>
+        <div class="cb"><div class="pool" id="pool"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STEP 3 ================= -->
+  <section class="step" id="step3">
+    <div class="sec-head">
+      <h2>공수 결정 <small id="sideSub">코인을 던져 첫 라운드 공격/수비를 랜덤으로 정합니다</small></h2>
+    </div>
+    <div class="side-layout">
+      <div class="side-card" id="sideA"><div class="tn" id="sideNameA">TEAM A</div><div class="sd rj" id="sideSdA">—</div><div class="sk" id="sideSkA">&nbsp;</div></div>
+      <div class="coin idle" id="coin"><div class="inner"><div class="f atk rj">ATK</div><div class="f def rj">DEF</div></div></div>
+      <div class="side-card" id="sideB"><div class="tn" id="sideNameB">TEAM B</div><div class="sd rj" id="sideSdB">—</div><div class="sk" id="sideSkB">&nbsp;</div></div>
+    </div>
+    <div class="btn-row" style="margin-top:18px;justify-content:center">
+      <button class="btn primary lg" id="btnFlip">🪙 공수 정하기</button>
+      <button class="btn ghost" id="btnReflip" disabled>다시 던지기</button>
+    </div>
+
+    <div class="summary" id="summary" style="display:none">
+      <div class="sh"><h3>매치 요약</h3>
+        <div class="btn-row">
+          <button class="btn ghost sm" id="btnRematch">🔁 같은 팀 한판 더</button>
+          <button class="btn ghost sm" id="btnCopy">📋 결과 복사</button>
+          <button class="btn teal sm" id="btnSave">💾 기록 저장</button>
+        </div>
+      </div>
+      <div class="sum-grid">
+        <div class="sum-team" id="sumA"></div>
+        <div class="sum-team" id="sumB"></div>
+      </div>
+      <div class="sum-score">
+        <span class="sc-name" id="scNameA"></span>
+        <input id="scoreA" type="number" min="0" max="99" placeholder="–" title="팀 A 스코어">
+        <span class="sc-colon rj">:</span>
+        <input id="scoreB" type="number" min="0" max="99" placeholder="–" title="팀 B 스코어">
+        <span class="sc-name" id="scNameB"></span>
+      </div>
+      <div class="sum-map" id="sumMap"></div>
+    </div>
+  </section>
+
+  <!-- ================= HISTORY ================= -->
+  <div class="hist card">
+    <div class="ch"><h3>매치 기록 <span class="hint">(브라우저 로컬 저장 · 나중에 DB/API 연동용 JSON 내보내기 가능)</span></h3>
+      <div class="btn-row">
+        <button class="btn ghost sm" id="btnExport">JSON 내보내기</button>
+        <button class="btn ghost sm" id="btnClearHist">기록 삭제</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>#</th><th class="hide-m">일시</th><th>맵</th><th>스코어</th><th>팀 A</th><th>팀 B</th><th class="hide-m">선수</th><th></th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   VAL BALANCE — 단일 파일 / 외부 의존성 없음
+   데이터 모델은 추후 DB/API 연동을 염두에 두고 JSON 직렬화 가능하게 유지
+   ========================================================= */
+const TIERS = 5;
+const LS = {
+  players:'vb.players.v1', tierNames:'vb.tierNames.v1', teamNames:'vb.teamNames.v1',
+  pool:'vb.pool.v1', history:'vb.history.v1', session:'vb.session.v1'
+};
+
+// 발로란트 맵 (active: 2026 기준 대략적 로테 — 필요 시 체크박스로 조정)
+const MAPS = [
+  {id:'ascent',   en:'ASCENT',   ko:'어센트',   color:'#7fb3a6', bg:'linear-gradient(135deg,#1e3a34,#0f1419)', active:true},
+  {id:'bind',     en:'BIND',     ko:'바인드',   color:'#d9a066', bg:'linear-gradient(135deg,#4a3320,#0f1419)', active:true},
+  {id:'haven',    en:'HAVEN',    ko:'헤이븐',   color:'#c2b280', bg:'linear-gradient(135deg,#3f3a24,#0f1419)', active:true},
+  {id:'split',    en:'SPLIT',    ko:'스플릿',   color:'#6ec1e4', bg:'linear-gradient(135deg,#1e3448,#0f1419)', active:true},
+  {id:'icebox',   en:'ICEBOX',   ko:'아이스박스',color:'#a8d8ea', bg:'linear-gradient(135deg,#253d4d,#0f1419)', active:false},
+  {id:'breeze',   en:'BREEZE',   ko:'브리즈',   color:'#5dd0c2', bg:'linear-gradient(135deg,#1f4a46,#0f1419)', active:false},
+  {id:'fracture', en:'FRACTURE', ko:'프랙처',   color:'#c76f5c', bg:'linear-gradient(135deg,#4a2a24,#0f1419)', active:false},
+  {id:'pearl',    en:'PEARL',    ko:'펄',       color:'#7ea6e0', bg:'linear-gradient(135deg,#223050,#0f1419)', active:true},
+  {id:'lotus',    en:'LOTUS',    ko:'로터스',   color:'#c58bd9', bg:'linear-gradient(135deg,#3d2a4a,#0f1419)', active:true},
+  {id:'sunset',   en:'SUNSET',   ko:'선셋',     color:'#f08a4b', bg:'linear-gradient(135deg,#4d2d1c,#0f1419)', active:true},
+  {id:'abyss',    en:'ABYSS',    ko:'어비스',   color:'#5b6fd6', bg:'linear-gradient(135deg,#1f2550,#0f1419)', active:false},
+  {id:'corrode',  en:'CORRODE',  ko:'코로드',   color:'#9fb84a', bg:'linear-gradient(135deg,#3a4420,#0f1419)', active:true},
+];
+
+const $ = s=>document.querySelector(s);
+const load = (k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch{return d}};
+const save = (k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const rnd = n=>Math.floor(Math.random()*n);
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let toastT; const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1800)};
+
+// ---------- state ----------
+const state = {
+  step:1,
+  players: load(LS.players, Array.from({length:TIERS},()=>['',''])),
+  tierNames: load(LS.tierNames, Array.from({length:TIERS},(_,i)=>`밸런스 ${i+1}`)),
+  teamNames: load(LS.teamNames, ['TEAM A','TEAM B']),
+  pool: load(LS.pool, MAPS.filter(m=>m.active).map(m=>m.id)),
+  teams:null,     // {A:[{tier,name}], B:[...]}
+  map:null,       // map id
+  mapLocked:false,
+  sides:null,     // {A:'ATK'|'DEF', B:...}
+  history: load(LS.history, []),
+  busy:false,
+  savedCurrent:false, // 현재 매치가 이미 기록 저장됐는지 (중복 저장 방지)
+};
+
+// ---------- step nav ----------
+function setStep(n){
+  state.step=n;
+  document.querySelectorAll('section.step').forEach(s=>s.classList.toggle('show', s.id==='step'+n));
+  document.querySelectorAll('#nav .tab').forEach(t=>{
+    const s=+t.dataset.step;
+    t.classList.toggle('active', s===n);
+    const done = (s===1&&state.teams) || (s===2&&state.mapLocked) || (s===3&&state.sides);
+    t.classList.toggle('done', !!done && s!==n);
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+  persistSession();
+}
+document.querySelectorAll('#nav .tab').forEach(t=>t.addEventListener('click',()=>{
+  const s=+t.dataset.step;
+  if(s===2 && !state.teams) return toast('먼저 팀을 섞어주세요');
+  if(s===3 && !state.mapLocked) return toast('먼저 맵을 확정해주세요');
+  setStep(s);
+}));
+
+// ---------- step 1: tiers ----------
+function renderTiers(){
+  const g=$('#tierGrid'); g.innerHTML='';
+  for(let t=0;t<TIERS;t++){
+    const el=document.createElement('div'); el.className='tier';
+    el.innerHTML=`
+      <div class="th"><span class="badge">${t+1}</span><input data-tn="${t}" value="${esc(state.tierNames[t])}" maxlength="12" title="티어 이름 수정"></div>
+      <div class="tb">
+        <div class="pin" data-i="P1"><input data-t="${t}" data-p="0" placeholder="플레이어 1" value="${esc(state.players[t][0])}" maxlength="20" autocomplete="off"></div>
+        <div class="pin" data-i="P2"><input data-t="${t}" data-p="1" placeholder="플레이어 2" value="${esc(state.players[t][1])}" maxlength="20" autocomplete="off"></div>
+      </div>`;
+    g.appendChild(el);
+  }
+  g.querySelectorAll('input[data-t]').forEach(inp=>{
+    inp.addEventListener('input',()=>{state.players[+inp.dataset.t][+inp.dataset.p]=inp.value.trim();save(LS.players,state.players);invalidateTeams();});
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();const all=[...g.querySelectorAll('input[data-t]')];const i=all.indexOf(inp);(all[i+1]||$('#btnShuffle')).focus();}
+    });
+  });
+  g.querySelectorAll('input[data-tn]').forEach(inp=>inp.addEventListener('input',()=>{state.tierNames[+inp.dataset.tn]=inp.value;save(LS.tierNames,state.tierNames);renderTeams();}));
+}
+function invalidateTeams(){
+  if(state.teams){ state.teams=null; state.map=null; state.mapLocked=false; state.sides=null; state.savedCurrent=false; clearScore(); renderTeams(); syncButtons(); persistSession(); }
+}
+const nm = (t,p)=>state.players[t][p]||'-';
+
+function renderTeams(rollingNames){
+  const build=(list,arr)=>{
+    list.innerHTML='';
+    for(let t=0;t<TIERS;t++){
+      const li=document.createElement('li');
+      const name = rollingNames ? rollingNames(t) : (state.teams ? state.teams[list===listA?'A':'B'][t].name : '');
+      li.innerHTML=`<span class="t">${t+1}</span><span class="nm ${!name?'empty':''} ${rollingNames?'rolling':''}">${name?esc(name):'대기 중'}</span><span class="tl">${esc(state.tierNames[t])}</span>`;
+      list.appendChild(li);
+    }
+  };
+  const listA=$('#listA'), listB=$('#listB');
+  build(listA); build(listB);
+  $('#vs').classList.toggle('done', !!state.teams);
+  renderSideTags();
+}
+function renderSideTags(){
+  const a=$('#tagA'),b=$('#tagB');
+  a.className='side-tag'; b.className='side-tag'; a.textContent=''; b.textContent='';
+  if(state.sides){
+    a.classList.add(state.sides.A.toLowerCase()); a.textContent=state.sides.A;
+    b.classList.add(state.sides.B.toLowerCase()); b.textContent=state.sides.B;
+  }
+}
+function buildLadders(){
+  ['#ladderA','#ladderB'].forEach(sel=>{const l=$(sel);l.innerHTML='';for(let i=0;i<TIERS;i++){const s=document.createElement('i');s.style.top=(52+i*42+20)+'px';l.appendChild(s);}});
+}
+
+function shuffleTeams(){
+  if(state.busy) return;
+  const filled = state.players.flat().filter(Boolean).length;
+  if(filled===0) return toast('플레이어를 한 명 이상 입력해주세요');
+  state.busy=true; syncButtons();
+  state.teams=null; state.map=null; state.mapLocked=false; state.sides=null;
+  $('#ladderA').classList.add('on'); $('#ladderB').classList.add('on');
+
+  // 최종 결과 미리 결정 (티어별 코인 플립)
+  const flips = Array.from({length:TIERS},()=>rnd(2));
+  const final = {A:[],B:[]};
+  for(let t=0;t<TIERS;t++){
+    const a=flips[t], b=1-a;
+    final.A.push({tier:t+1, tierName:state.tierNames[t], name:nm(t,a)});
+    final.B.push({tier:t+1, tierName:state.tierNames[t], name:nm(t,b)});
+  }
+  // 사다리 애니메이션: 이름이 왔다갔다 하다가 윗 티어부터 순차 확정
+  let tick=0; const settled=new Array(TIERS).fill(false);
+  const listA=$('#listA'), listB=$('#listB');
+  const iv=setInterval(()=>{
+    tick++;
+    const settleIdx=Math.floor(tick/6)-1; // 6틱(~480ms)마다 한 티어 확정
+    if(settleIdx>=0 && settleIdx<TIERS) settled[settleIdx]=true;
+    const rows=[...listA.children], rowsB=[...listB.children];
+    for(let t=0;t<TIERS;t++){
+      const r=rows[t].querySelector('.nm'), rb=rowsB[t].querySelector('.nm');
+      if(settled[t]){
+        r.textContent=final.A[t].name; rb.textContent=final.B[t].name; r.className='nm'; rb.className='nm';
+      }else{
+        const f=tick%2; r.textContent=nm(t,f); rb.textContent=nm(t,1-f); r.className='nm rolling'; rb.className='nm rolling';
+      }
+    }
+    if(settled.every(Boolean)){
+      clearInterval(iv);
+      state.teams=final; state.busy=false; state.savedCurrent=false; clearScore();
+      $('#ladderA').classList.remove('on'); $('#ladderB').classList.remove('on');
+      renderTeams(); syncButtons(); setStep(1);
+      toast('팀 배정 완료!');
+    }
+  },80);
+}
+
+// ---------- step 2: maps ----------
+function renderPool(){
+  const p=$('#pool'); p.innerHTML='';
+  MAPS.forEach(m=>{
+    const on=state.pool.includes(m.id);
+    const b=document.createElement('button'); b.className='chip '+(on?'on':'off'); b.dataset.id=m.id; b.style.setProperty('--mc',m.color);
+    b.innerHTML=`<span class="ck"></span><span class="sw"></span><span class="en rj">${m.en}</span><span class="ko">${m.ko}</span>`;
+    b.addEventListener('click',()=>{
+      if(state.busy) return;
+      if(on && state.pool.length===1) return toast('맵은 최소 1개 이상 남겨야 합니다');
+      state.pool = on ? state.pool.filter(x=>x!==m.id) : [...state.pool,m.id];
+      save(LS.pool,state.pool);
+      if(!state.pool.includes(state.map) && !state.mapLocked){ state.map=null; renderMap(); }
+      renderPool(); syncButtons();
+    });
+    p.appendChild(b);
+  });
+  $('#poolCount').textContent=`${state.pool.length}/${MAPS.length}`;
+}
+$('#poolAll').addEventListener('click',()=>{state.pool=MAPS.map(m=>m.id);save(LS.pool,state.pool);renderPool();});
+$('#poolActive').addEventListener('click',()=>{state.pool=MAPS.filter(m=>m.active).map(m=>m.id);save(LS.pool,state.pool);if(!state.pool.includes(state.map)&&!state.mapLocked){state.map=null;renderMap();}renderPool();syncButtons();});
+
+const mapById=id=>MAPS.find(m=>m.id===id);
+function renderMap(rollingId){
+  const id=rollingId||state.map; const m=id?mapById(id):null;
+  const st=$('#mapStage'), n=$('#mapName'), k=$('#mapKo');
+  st.classList.toggle('locked', state.mapLocked);
+  n.className='mname rj '+(rollingId?'rolling':state.mapLocked?'locked':'');
+  if(m){ n.textContent=m.en; k.textContent=m.ko + (state.mapLocked?' · 확정됨':rollingId?'':' · 마음에 안 들면 다시 돌리기'); st.style.setProperty('--mapbg',m.bg); }
+  else { n.textContent='?'; k.textContent='맵 풀에서 랜덤으로 뽑습니다'; st.style.removeProperty('--mapbg'); }
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('hot', !!id && c.dataset.id===id));
+}
+function rollMap(){
+  if(state.busy||state.mapLocked) return;
+  if(state.pool.length===0) return toast('맵 풀이 비어 있습니다');
+  state.busy=true; syncButtons(); state.sides=null;
+  const pool=[...state.pool];
+  // 이전 결과 제외 (다시 돌리기 시 같은 맵 방지, 풀이 1개면 불가)
+  const cand = pool.length>1 && state.map ? pool.filter(x=>x!==state.map) : pool;
+  const finalId = cand[rnd(cand.length)];
+  // 룰렛: 빠르게 → 느리게
+  let i=0, delay=50, cur=rnd(pool.length);
+  const steps = 14 + rnd(6);
+  const tickFn=()=>{
+    cur=(cur+1)%pool.length;
+    const showId = i>=steps ? finalId : pool[cur];
+    renderMap(showId);
+    i++;
+    if(i<=steps){ delay = Math.min(260, delay*1.15); setTimeout(tickFn,delay); }
+    else { state.map=finalId; state.busy=false; renderMap(); syncButtons(); persistSession(); }
+  };
+  tickFn();
+}
+function lockMap(){
+  if(!state.map||state.busy) return;
+  state.mapLocked=true; renderMap(); syncButtons();
+  setStep(3); renderSide();
+  toast(`${mapById(state.map).ko} 확정!`);
+}
+
+// ---------- step 3: sides ----------
+function renderSide(){
+  $('#sideNameA').textContent=state.teamNames[0]; $('#sideNameB').textContent=state.teamNames[1];
+  const A=$('#sideA'),B=$('#sideB');
+  A.className='side-card'; B.className='side-card';
+  if(state.sides){
+    A.classList.add(state.sides.A.toLowerCase()); B.classList.add(state.sides.B.toLowerCase());
+    $('#sideSdA').textContent=state.sides.A; $('#sideSdB').textContent=state.sides.B;
+    $('#sideSkA').textContent=state.sides.A==='ATK'?'공격 시작':'수비 시작';
+    $('#sideSkB').textContent=state.sides.B==='ATK'?'공격 시작':'수비 시작';
+    $('#sideSub').textContent = `${mapById(state.map).ko} · 1라운드 ${state.sides.A==='ATK'?state.teamNames[0]:state.teamNames[1]} 공격`;
+  }else{
+    $('#sideSdA').textContent='—'; $('#sideSdB').textContent='—';
+    $('#sideSkA').innerHTML='&nbsp;'; $('#sideSkB').innerHTML='&nbsp;';
+    $('#sideSub').textContent='코인을 던져 첫 라운드 공격/수비를 랜덤으로 정합니다';
+  }
+  renderSummary(); renderSideTags();
+}
+function flipSide(){
+  if(state.busy) return;
+  state.busy=true; syncButtons();
+  const aAtk = rnd(2)===0;
+  const coin=$('#coin'), inner=coin.querySelector('.inner');
+  coin.classList.remove('idle');
+  inner.style.transition='none'; inner.style.transform='rotateY(90deg)';
+  requestAnimationFrame(()=>{
+    inner.style.transition='';
+    const spins = 5 + rnd(3);
+    inner.style.transform = `rotateY(${spins*360 + (aAtk?0:180)}deg)`;
+  });
+  setTimeout(()=>{
+    state.sides = aAtk ? {A:'ATK',B:'DEF'} : {A:'DEF',B:'ATK'};
+    state.savedCurrent=false;
+    state.busy=false; renderSide(); syncButtons(); persistSession();
+  },1700);
+}
+
+// ---------- summary / history ----------
+const clearScore=()=>{ $('#scoreA').value=''; $('#scoreB').value=''; };
+// 진행 중 매치를 localStorage에 저장 → 새로고침해도 이어서 진행
+function persistSession(){
+  save(LS.session,{
+    teams:state.teams, map:state.map, mapLocked:state.mapLocked, sides:state.sides,
+    step:state.step, savedCurrent:state.savedCurrent,
+    score:[$('#scoreA').value,$('#scoreB').value],
+  });
+}
+function matchRecord(){
+  const sa=$('#scoreA').value.trim(), sb=$('#scoreB').value.trim();
+  const score=(sa!==''&&sb!=='')?{A:+sa,B:+sb}:null;
+  return {
+    id: 'm_'+Date.now().toString(36),
+    createdAt: new Date().toISOString(),
+    map: state.map, mapName: mapById(state.map).en,
+    teams: {
+      A:{name:state.teamNames[0], side:state.sides.A, players:state.teams.A},
+      B:{name:state.teamNames[1], side:state.sides.B, players:state.teams.B},
+    },
+    score,
+    winner: score ? (score.A>score.B?'A':score.B>score.A?'B':'draw') : null,
+    schemaVersion:2,
+  };
+}
+function renderSummary(){
+  const s=$('#summary');
+  if(!(state.teams&&state.mapLocked&&state.sides)){ s.style.display='none'; return; }
+  s.style.display='block';
+  const team=(key,idx)=>`
+    <div class="ht"><span class="pill ${state.sides[key].toLowerCase()}">${state.sides[key]}</span>${esc(state.teamNames[idx])}</div>
+    ${state.teams[key].map(p=>`<div class="pl"><span>${esc(p.name)}</span><span class="tt">${esc(p.tierName)}</span></div>`).join('')}`;
+  $('#sumA').innerHTML=team('A',0); $('#sumB').innerHTML=team('B',1);
+  $('#scNameA').textContent=state.teamNames[0]; $('#scNameB').textContent=state.teamNames[1];
+  const m=mapById(state.map);
+  $('#sumMap').innerHTML=`<span class="dot" style="background:${m.color}"></span><span class="rj">${m.en}</span><span class="hint">${m.ko}</span>`;
+}
+function summaryText(){
+  const m=mapById(state.map);
+  const line=(key,idx)=>`[${state.sides[key]}] ${state.teamNames[idx]}: `+state.teams[key].map(p=>p.name).join(', ');
+  const sa=$('#scoreA').value.trim(), sb=$('#scoreB').value.trim();
+  const sc=(sa!==''&&sb!=='')?`\n🏁 ${state.teamNames[0]} ${sa} : ${sb} ${state.teamNames[1]}`:'';
+  return `🗺️ ${m.en} (${m.ko})\n${line('A',0)}\n${line('B',1)}${sc}`;
+}
+async function copySummary(){
+  try{ await navigator.clipboard.writeText(summaryText()); toast('클립보드에 복사됨'); }
+  catch{ const ta=document.createElement('textarea');ta.value=summaryText();document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('클립보드에 복사됨'); }
+}
+function saveHistory(){
+  state.history.unshift(matchRecord()); state.history=state.history.slice(0,200);
+  save(LS.history,state.history); state.savedCurrent=true;
+  renderHistory(); syncButtons(); persistSession(); toast('기록 저장됨');
+}
+function renderHistory(){
+  const tb=$('#histBody'); tb.innerHTML='';
+  if(!state.history.length){ tb.innerHTML='<tr><td colspan="8" class="empty-row">저장된 매치가 없습니다</td></tr>'; return; }
+  state.history.forEach((h,i)=>{
+    const m=mapById(h.map)||{en:h.mapName,ko:'',color:'#888'};
+    const d=new Date(h.createdAt);
+    const ds=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const pl=k=>h.teams[k].players.map(p=>p.name).join(', ');
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m">${ds}</td>
+      <td class="mp"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
+      <td class="score rj">${h.score?`<span class="${h.winner==='A'?'w':''}">${h.score.A}</span> : <span class="${h.winner==='B'?'w':''}">${h.score.B}</span>`:'<span style="color:var(--muted)">–</span>'}</td>
+      <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
+      <td><span class="pill ${h.teams.B.side.toLowerCase()}">${h.teams.B.side}</span> ${esc(h.teams.B.name)}</td>
+      <td class="sm hide-m">${esc(pl('A'))} <span style="color:var(--muted)">vs</span> ${esc(pl('B'))}</td>
+      <td><button class="btn ghost sm" data-del="${i}">삭제</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{state.history.splice(+b.dataset.del,1);save(LS.history,state.history);renderHistory();}));
+}
+function exportJSON(){
+  const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),schemaVersion:2,maps:MAPS.map(({id,en,ko})=>({id,en,ko})),matches:state.history},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`val-balance-history-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// ---------- buttons ----------
+function syncButtons(){
+  const b=state.busy;
+  $('#btnShuffle').disabled=b; $('#btnShuffle').textContent = state.teams?'🎲 사다리 돌리기':'🎲 사다리 돌리기';
+  $('#btnReshuffle').disabled=b||!state.teams;
+  $('#btnToMap').disabled=b||!state.teams;
+  $('#btnRollMap').disabled=b||state.mapLocked||!!state.map;
+  $('#btnRerollMap').disabled=b||state.mapLocked||!state.map;
+  $('#btnLockMap').disabled=b||state.mapLocked||!state.map;
+  $('#btnFlip').disabled=b||!!state.sides;
+  $('#btnReflip').disabled=b||!state.sides;
+  $('#btnSave').disabled=b||!state.sides||state.savedCurrent;
+  $('#btnRematch').disabled=b||!state.teams;
+}
+$('#btnShuffle').addEventListener('click',shuffleTeams);
+$('#btnReshuffle').addEventListener('click',shuffleTeams);
+$('#btnToMap').addEventListener('click',()=>{setStep(2);renderMap();});
+$('#btnRollMap').addEventListener('click',rollMap);
+$('#btnRerollMap').addEventListener('click',rollMap);
+$('#btnLockMap').addEventListener('click',lockMap);
+$('#btnFlip').addEventListener('click',flipSide);
+$('#btnReflip').addEventListener('click',()=>{state.sides=null;renderSide();$('#coin').classList.add('idle');flipSide();});
+$('#btnCopy').addEventListener('click',copySummary);
+$('#btnSave').addEventListener('click',saveHistory);
+$('#btnExport').addEventListener('click',exportJSON);
+$('#btnClearHist').addEventListener('click',()=>{if(!state.history.length)return;if(confirm('매치 기록을 모두 삭제할까요?')){state.history=[];save(LS.history,[]);renderHistory();}});
+$('#btnClearPlayers').addEventListener('click',()=>{if(!confirm('플레이어 입력을 모두 지울까요?'))return;state.players=Array.from({length:TIERS},()=>['','']);save(LS.players,state.players);renderTiers();invalidateTeams();});
+$('#btnReset').addEventListener('click',()=>{
+  if(state.busy) return;
+  state.teams=null;state.map=null;state.mapLocked=false;state.sides=null;state.savedCurrent=false;clearScore();
+  $('#coin').classList.add('idle');
+  renderTeams();renderMap();renderSide();syncButtons();setStep(1);toast('새 매치 시작 (플레이어 입력은 유지)');
+});
+// 같은 팀 그대로 한판 더: 팀 유지, 맵/공수/스코어만 초기화 후 맵 선택으로
+$('#btnRematch').addEventListener('click',()=>{
+  if(state.busy||!state.teams) return;
+  state.map=null;state.mapLocked=false;state.sides=null;state.savedCurrent=false;clearScore();
+  $('#coin').classList.add('idle');
+  renderTeams();renderMap();renderSide();syncButtons();setStep(2);
+  toast('같은 팀으로 한판 더 — 맵부터 다시!');
+});
+['#scoreA','#scoreB'].forEach(s=>$(s).addEventListener('input',persistSession));
+['#nameA','#nameB'].forEach((sel,i)=>{const inp=$(sel);inp.value=state.teamNames[i];inp.addEventListener('input',()=>{state.teamNames[i]=inp.value||(i?'TEAM B':'TEAM A');save(LS.teamNames,state.teamNames);renderSide();});});
+
+// 키보드: Space = 현재 단계 랜덤 액션 (입력 중이 아닐 때)
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||e.target.matches('input,textarea,button')) return;
+  e.preventDefault();
+  if(state.step===1) shuffleTeams(); else if(state.step===2) rollMap(); else if(state.step===3&&!state.sides) flipSide();
+});
+
+// ---------- init ----------
+// 새로고침 복원: 진행 중이던 매치(팀/맵/공수/스코어/단계)를 되살림
+let _restore = load(LS.session,null);
+if(_restore && _restore.teams){
+  state.teams=_restore.teams; state.map=_restore.map??null;
+  state.mapLocked=!!_restore.mapLocked; state.sides=_restore.sides??null;
+  state.savedCurrent=!!_restore.savedCurrent;
+}else{ _restore=null; }
+renderTiers(); buildLadders(); renderTeams(); renderPool(); renderMap(); renderSide(); renderHistory(); syncButtons();
+if(_restore){
+  if(Array.isArray(_restore.score)){ $('#scoreA').value=_restore.score[0]||''; $('#scoreB').value=_restore.score[1]||''; }
+  if(state.sides){ // 코인을 애니메이션 없이 결과 면으로
+    const inner=document.querySelector('#coin .inner'); $('#coin').classList.remove('idle');
+    inner.style.transition='none'; inner.style.transform=`rotateY(${state.sides.A==='ATK'?0:180}deg)`;
+    requestAnimationFrame(()=>{ inner.style.transition=''; });
+  }
+}
+let _step=(_restore&&_restore.step)||1;
+if(_step===3&&!state.mapLocked) _step=state.teams?2:1;
+if(_step===2&&!state.teams) _step=1;
+setStep(_step);
+</script>
+</body>
+</html>
