@@ -1,0 +1,20 @@
+/* =========================================
+   components.css — 공용 컴포넌트 (버튼 · 필 · 빈 행)
+   ========================================= */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;border-radius:8px;font-weight:700;font-size:14px;transition:.15s;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--red);color:#fff}
+.btn.primary:hover:not(:disabled){background:var(--red2)}
+.btn.teal{background:var(--teal);color:#06282a}
+.btn.teal:hover:not(:disabled){background:var(--teal2)}
+.btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.btn.ghost:hover:not(:disabled){border-color:var(--sub)}
+.btn.sm{height:32px;padding:0 12px;font-size:12px}
+.btn.lg{height:48px;padding:0 28px;font-size:16px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+.pill{display:inline-block;font-size:10px;font-weight:900;padding:2px 6px;border-radius:3px;color:#fff;letter-spacing:.06em}
+.pill.atk{background:var(--atk)}
+.pill.def{background:var(--def)}
+
+.empty-row{color:var(--muted);text-align:center;padding:24px}

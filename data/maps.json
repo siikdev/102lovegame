@@ -1,0 +1,14 @@
+[
+  {"id":"ascent",   "en":"ASCENT",   "ko":"어센트",     "color":"#7fb3a6", "bg":"linear-gradient(135deg,#1e3a34,#0f1419)", "active":true},
+  {"id":"bind",     "en":"BIND",     "ko":"바인드",     "color":"#d9a066", "bg":"linear-gradient(135deg,#4a3320,#0f1419)", "active":true},
+  {"id":"haven",    "en":"HAVEN",    "ko":"헤이븐",     "color":"#c2b280", "bg":"linear-gradient(135deg,#3f3a24,#0f1419)", "active":true},
+  {"id":"split",    "en":"SPLIT",    "ko":"스플릿",     "color":"#6ec1e4", "bg":"linear-gradient(135deg,#1e3448,#0f1419)", "active":true},
+  {"id":"icebox",   "en":"ICEBOX",   "ko":"아이스박스", "color":"#a8d8ea", "bg":"linear-gradient(135deg,#253d4d,#0f1419)", "active":false},
+  {"id":"breeze",   "en":"BREEZE",   "ko":"브리즈",     "color":"#5dd0c2", "bg":"linear-gradient(135deg,#1f4a46,#0f1419)", "active":false},
+  {"id":"fracture", "en":"FRACTURE", "ko":"프랙처",     "color":"#c76f5c", "bg":"linear-gradient(135deg,#4a2a24,#0f1419)", "active":false},
+  {"id":"pearl",    "en":"PEARL",    "ko":"펄",         "color":"#7ea6e0", "bg":"linear-gradient(135deg,#223050,#0f1419)", "active":true},
+  {"id":"lotus",    "en":"LOTUS",    "ko":"로터스",     "color":"#c58bd9", "bg":"linear-gradient(135deg,#3d2a4a,#0f1419)", "active":true},
+  {"id":"sunset",   "en":"SUNSET",   "ko":"선셋",       "color":"#f08a4b", "bg":"linear-gradient(135deg,#4d2d1c,#0f1419)", "active":true},
+  {"id":"abyss",    "en":"ABYSS",    "ko":"어비스",     "color":"#5b6fd6", "bg":"linear-gradient(135deg,#1f2550,#0f1419)", "active":false},
+  {"id":"corrode",  "en":"CORRODE",  "ko":"코로드",     "color":"#9fb84a", "bg":"linear-gradient(135deg,#3a4420,#0f1419)", "active":true}
+]
