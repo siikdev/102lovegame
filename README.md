@@ -1,6 +1,6 @@
 # VAL Balance
 
-발로란트 내전용 팀 밸런스 도구 — 티어별 팀 랜덤 배정(사다리), 맵 룰렛, 공수 코인토스, 매치 기록.
+발로란트 내전 도구 — 티어별 팀 랜덤 배정(사다리), 맵 룰렛, 공수 코인토스, 매치 기록/수정/통계(예정).
 
 ## 실행
 
@@ -8,46 +8,36 @@
 python3 -m http.server 8787
 ```
 
-→ **http://localhost:8787/** (모듈화 버전 `index.html`)
+→ **http://localhost:8787/** (frontend 로 자동 이동)
 
-> ⚠️ 파일을 더블클릭(file://)으로 열면 ES 모듈·fetch가 차단됩니다. 반드시 로컬 서버로 여세요.
-> `valorant-balance.html` 은 동일 기능의 레거시 단일 파일(서버 없이도 동작)입니다.
+> ⚠️ file:// 로 열면 ES 모듈·fetch가 차단됩니다. 반드시 로컬 서버로.
+> `legacy/valorant-balance.html` 은 동일 기능의 단일 파일 원본(서버 없이 동작).
 
 ## 기능
 
-- **팀 밸런스**: 티어(기본 5개)별 2명 입력 → 각 팀에 티어당 1명 랜덤 배정, 사다리 애니메이션
-- **맵 선택**: 맵 풀 체크(전체/현 로테), 룰렛 랜덤 + 리롤, 확정
-- **공수 결정**: 코인토스로 1라운드 공격/수비
-- **매치 요약**: 스코어 입력(A:B), 결과 클립보드 복사, 기록 저장, 🔁 같은 팀 한판 더
-- **매치 기록**: 로컬 저장(최대 200개), 수동 추가(놓친 판 수기 입력), JSON 내보내기, 삭제
-- **세션 복원**: 진행 중 매치(팀/맵/공수/입력 중 스코어/단계)가 새로고침에도 유지
-- 단축키: `Space` = 현재 단계의 랜덤 액션, `Enter` = 다음 입력칸
+- **팀 밸런스**: 티어별 2명 입력 → 팀당 티어 1명 랜덤 배정 (사다리 애니메이션)
+- **맵 선택**: 맵 풀 관리(전체/현 로테), 룰렛 + 리롤, 확정
+- **공수 결정**: 코인토스
+- **매치 요약**: 스코어 입력, 복사, 저장, 🔁 같은 팀 한판 더
+- **매치 기록**: 일시/맵/스코어 **클릭 인라인 수정**(일시 변경 시 자동 재정렬), ✍️ 수동 추가, JSON 내보내기
+- **세션 복원**: 진행 중 매치가 새로고침에도 유지
+- 단축키: `Space` 현재 단계 랜덤 액션
 
-## 구조
+## 구조 (루트 최소화 · 들어갈수록 상세 — FSD)
 
 ```
-index.html            마크업 (기능별 data-feature 속성)
-css/                  base(토큰·리셋) / layout / components + features/<기능>.css
-js/
-  config/app.config.js  ← 기능 on/off 플래그 · 데이터 소스 선택
-  core/                 state · bus(이벤트) · storage · session · dom
-  app/steps.js          단계 내비게이션
-  data/                 adapter 팩토리 + local(JSON/localStorage) · http(스텁)
-  features/             teams · maps · sides · summary · history · keyboard
-data/maps.json        맵 데이터 (로테이션 active 플래그 포함)
+frontend/   앱 (app/ features/ shared/ data/ styles/) — 기능별 폴더에 js+css 공존
+backend/    백엔드 계획: API 계약 · SQLite 스키마 (README.md)
+docs/       ARCHITECTURE.md(워크플로우·디버깅 가이드) · adr/(의사결정)
+legacy/     초기 단일 HTML
 ```
 
-### 기능 켜고 끄기
-
-`js/config/app.config.js` 의 `features` 에서 `true/false` 만 바꾸면 됩니다. 꺼진 기능은 init 되지 않고 DOM도 숨겨집니다.
-
-### 데이터 / 백업
-
-- 기록은 브라우저 localStorage(origin 기준)에 저장 → **JSON 내보내기**로 수시 백업 권장
-- 매치 레코드: `{id, createdAt, map, teams:{A,B:{name,side,players[]}}, score, winner, manual?, schemaVersion}`
+- **기능 켜고 끄기**: `frontend/app/app.config.js` 의 `features` 에서 true/false
+- **데이터 소스 교체**: 같은 파일 `dataSource: 'local' | 'http'` — 백엔드 붙일 때 adapter만 구현
+- 기록 데이터: 브라우저 localStorage (origin=포트 기준) → **JSON 내보내기로 수시 백업 권장**
 
 ## 로드맵
 
-- [ ] `adapters/http.js` 구현 → 백엔드 서버/외부 API 연동 (`dataSource: 'http'` 전환만으로 교체)
-- [ ] 전적 통계 (플레이어별 승률, 맵별 분포)
-- [ ] MCP 연동 (기록 조회/입력 자동화)
+- [ ] 스크린샷 기반 결과 기록 (스탯 자동 추출)
+- [ ] 유저별 승률/KD — 맵별·요원별 통계
+- [ ] backend: Node + SQLite (ADR-0001 — 지금 규모엔 Docker 불필요, 조건 충족 시 Postgres 전환)
