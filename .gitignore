@@ -1,0 +1,10 @@
+# Claude Code 워크트리 (백그라운드 세션 격리용)
+.claude/worktrees/
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+
+# 추후 백엔드/툴링 대비
+node_modules/
+*.log
