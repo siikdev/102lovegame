@@ -187,6 +187,18 @@
   .hist td.score{font-weight:700;white-space:nowrap;font-size:14px}
   .hist td.score .w{color:var(--gold)}
 
+  /* ===== manual add ===== */
+  [hidden]{display:none!important}
+  .manual-form{padding:14px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+  .mf-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .mf-grid label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--sub);font-weight:700}
+  .mf-grid label.wide{grid-column:span 2}
+  .mf-grid input,.mf-grid select{height:36px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:0 10px;font-size:13px;color:var(--text);color-scheme:dark;width:100%}
+  .mf-grid input:focus,.mf-grid select:focus{border-color:var(--teal);outline:none}
+  .mf-score{display:flex;align-items:center;gap:6px}
+  .mf-score input{text-align:center}
+  .mf-score span{color:var(--muted);font-weight:900}
+
   .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:var(--card2);border:1px solid var(--line);padding:10px 18px;border-radius:8px;font-weight:700;opacity:0;transition:.2s;pointer-events:none;z-index:99}
   .toast.on{opacity:1;transform:translateX(-50%)}
   .hint{font-size:12px;color:var(--sub)}
@@ -210,6 +222,7 @@
     .sum-grid{grid-template-columns:1fr}
     .sum-team+.sum-team{border-left:none;border-top:1px solid var(--line)}
     .hist .hide-m{display:none}
+    .mf-grid{grid-template-columns:1fr 1fr}
   }
 </style>
 </head>
@@ -334,8 +347,25 @@
   <div class="hist card">
     <div class="ch"><h3>매치 기록 <span class="hint">(브라우저 로컬 저장 · 나중에 DB/API 연동용 JSON 내보내기 가능)</span></h3>
       <div class="btn-row">
+        <button class="btn ghost sm" id="btnManual">✍️ 수동 추가</button>
         <button class="btn ghost sm" id="btnExport">JSON 내보내기</button>
         <button class="btn ghost sm" id="btnClearHist">기록 삭제</button>
+      </div>
+    </div>
+    <div class="manual-form" id="manualForm" hidden>
+      <div class="mf-grid">
+        <label>맵<select id="mfMap"></select></label>
+        <label>일시<input id="mfDate" type="datetime-local"></label>
+        <label>팀 A 이름<input id="mfNameA" maxlength="16"></label>
+        <label>팀 B 이름<input id="mfNameB" maxlength="16"></label>
+        <label>팀 A 시작<select id="mfSideA"><option value="ATK">공격 (ATK)</option><option value="DEF">수비 (DEF)</option></select></label>
+        <label>스코어 (A : B)<span class="mf-score"><input id="mfScoreA" type="number" min="0" max="99" placeholder="A"><span>:</span><input id="mfScoreB" type="number" min="0" max="99" placeholder="B"></span></label>
+        <label class="wide">팀 A 선수 (쉼표 구분 · 선택)<input id="mfPlayersA" placeholder="예: 플레이어1, 플레이어2"></label>
+        <label class="wide">팀 B 선수 (쉼표 구분 · 선택)<input id="mfPlayersB" placeholder=""></label>
+      </div>
+      <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
+        <button class="btn ghost sm" id="mfCancel">취소</button>
+        <button class="btn teal sm" id="mfSave">기록 추가</button>
       </div>
     </div>
     <div style="overflow-x:auto">
@@ -674,7 +704,7 @@ function renderHistory(){
     const ds=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const pl=k=>h.teams[k].players.map(p=>p.name).join(', ');
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m">${ds}</td>
+    tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m">${ds}${h.manual?' ✍':''}</td>
       <td class="mp"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
       <td class="score rj">${h.score?`<span class="${h.winner==='A'?'w':''}">${h.score.A}</span> : <span class="${h.winner==='B'?'w':''}">${h.score.B}</span>`:'<span style="color:var(--muted)">–</span>'}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
@@ -689,6 +719,52 @@ function exportJSON(){
   const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),schemaVersion:2,maps:MAPS.map(({id,en,ko})=>({id,en,ko})),matches:state.history},null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`val-balance-history-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href);
 }
+
+// ---------- manual add ----------
+// 저장 못 한 판을 수기로 추가 (현재 매치 정보가 있으면 자동 프리필)
+function toLocalDT(d){ const p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+function openManual(){
+  const f=$('#manualForm');
+  if(!f.hidden){ f.hidden=true; return; }
+  $('#mfMap').innerHTML=MAPS.map(m=>`<option value="${m.id}">${m.en} (${m.ko})</option>`).join('');
+  if(state.map) $('#mfMap').value=state.map;
+  $('#mfDate').value=toLocalDT(new Date());
+  $('#mfNameA').value=state.teamNames[0]; $('#mfNameB').value=state.teamNames[1];
+  $('#mfSideA').value=state.sides?state.sides.A:'ATK';
+  $('#mfScoreA').value=''; $('#mfScoreB').value='';
+  $('#mfPlayersA').value=state.teams?state.teams.A.map(p=>p.name).filter(n=>n&&n!=='-').join(', '):'';
+  $('#mfPlayersB').value=state.teams?state.teams.B.map(p=>p.name).filter(n=>n&&n!=='-').join(', '):'';
+  f.hidden=false;
+}
+function saveManual(){
+  const m=mapById($('#mfMap').value);
+  if(!m) return toast('맵을 선택해주세요');
+  const sideA=$('#mfSideA').value, sideB=sideA==='ATK'?'DEF':'ATK';
+  const sa=$('#mfScoreA').value.trim(), sb=$('#mfScoreB').value.trim();
+  const score=(sa!==''&&sb!=='')?{A:+sa,B:+sb}:null;
+  const parse=v=>v.split(',').map(s=>s.trim()).filter(Boolean).map((name,i)=>({tier:i+1,tierName:'',name}));
+  const dt=$('#mfDate').value?new Date($('#mfDate').value):new Date();
+  const rec={
+    id:'m_'+Date.now().toString(36),
+    createdAt:dt.toISOString(),
+    manual:true,
+    map:m.id, mapName:m.en,
+    teams:{
+      A:{name:$('#mfNameA').value||'TEAM A', side:sideA, players:parse($('#mfPlayersA').value)},
+      B:{name:$('#mfNameB').value||'TEAM B', side:sideB, players:parse($('#mfPlayersB').value)},
+    },
+    score, winner: score?(score.A>score.B?'A':score.B>score.A?'B':'draw'):null,
+    schemaVersion:2,
+  };
+  state.history.unshift(rec);
+  state.history.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  state.history=state.history.slice(0,200);
+  save(LS.history,state.history); renderHistory();
+  $('#manualForm').hidden=true; toast('수동 기록 추가됨');
+}
+$('#btnManual').addEventListener('click',openManual);
+$('#mfCancel').addEventListener('click',()=>{$('#manualForm').hidden=true;});
+$('#mfSave').addEventListener('click',saveManual);
 
 // ---------- buttons ----------
 function syncButtons(){
