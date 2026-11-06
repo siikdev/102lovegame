@@ -58,3 +58,5 @@ git branch -d feat/stats
 - 기능 세션: 자기 워크트리 밖(다른 워크트리·메인 체크아웃)의 파일을 건드리지 않는다
 - 병합·rebase·태그·브랜치 삭제는 **브랜치 관리 세션(또는 사용자)** 만 수행
 - 병합 전 체크: CLAUDE.md 검증 체크리스트 + 플래그 on/off 확인
+- 세션 시작/종료는 `/start-day` `/end-day` 스킬 사용 — 상태 인수인계는 `docs/HANDOFF.md`
+- **main 직접 커밋 예외 1개**: `/end-day` 의 `chore(handoff):` 커밋 (docs/HANDOFF.md 갱신)만 허용
