@@ -26,8 +26,9 @@ export function createLocalAdapter() {
       const h = load(LS.history, []);
       const i = h.findIndex(m => m.id === id);
       if (i >= 0) h[i] = {...h[i], ...patch};
-      save(LS.history, h);
-      return h;
+      const sorted = sortDesc(h); // createdAt 변경 시 순서 유지
+      save(LS.history, sorted);
+      return sorted;
     },
     async deleteMatch(id) {
       const h = load(LS.history, []).filter(m => m.id !== id);

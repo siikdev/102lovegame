@@ -17,6 +17,10 @@
 .hist td.mp:hover{background:rgba(255,255,255,.03)}
 .hist td.mp select{height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);padding:0 6px;color-scheme:dark}
 .hist td.mp select:focus{border-color:var(--teal);outline:none}
+.hist td.dt{cursor:pointer}
+.hist td.dt:hover{background:rgba(255,255,255,.03)}
+.hist td.dt input{height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);padding:0 6px;color-scheme:dark}
+.hist td.dt input:focus{border-color:var(--teal);outline:none}
 
 /* 수동 추가 폼 */
 .manual-form{padding:14px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}

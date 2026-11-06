@@ -193,6 +193,10 @@
   .hist td.mp:hover{background:rgba(255,255,255,.03)}
   .hist td.mp select{height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);padding:0 6px;color-scheme:dark}
   .hist td.mp select:focus{border-color:var(--teal);outline:none}
+  .hist td.dt{cursor:pointer}
+  .hist td.dt:hover{background:rgba(255,255,255,.03)}
+  .hist td.dt input{height:28px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--text);padding:0 6px;color-scheme:dark}
+  .hist td.dt input:focus{border-color:var(--teal);outline:none}
 
   /* ===== manual add ===== */
   [hidden]{display:none!important}
@@ -711,7 +715,7 @@ function renderHistory(){
     const ds=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     const pl=k=>h.teams[k].players.map(p=>p.name).join(', ');
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m">${ds}${h.manual?' ✍':''}</td>
+    tr.innerHTML=`<td class="sm">${state.history.length-i}</td><td class="sm hide-m dt" data-dt="${h.id}" title="클릭해서 일시 수정 (순서는 일시 기준 정렬)">${ds}${h.manual?' ✍':''}</td>
       <td class="mp" data-mp="${h.id}" title="클릭해서 맵 수정"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
       <td class="score rj" data-sc="${h.id}" title="클릭해서 스코어 입력/수정">${h.score?`<span class="${h.winner==='A'?'w':''}">${h.score.A}</span> : <span class="${h.winner==='B'?'w':''}">${h.score.B}</span>`:'<span style="color:var(--muted)">–</span>'}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
@@ -723,6 +727,26 @@ function renderHistory(){
   tb.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{state.history.splice(+b.dataset.del,1);save(LS.history,state.history);renderHistory();}));
   tb.querySelectorAll('td[data-sc]').forEach(td=>td.addEventListener('click',()=>editScore(td.dataset.sc,td)));
   tb.querySelectorAll('td[data-mp]').forEach(td=>td.addEventListener('click',()=>editMap(td.dataset.mp,td)));
+  tb.querySelectorAll('td[data-dt]').forEach(td=>td.addEventListener('click',()=>editDate(td.dataset.dt,td)));
+}
+// 기록 표의 일시 칸 클릭 → 일시 수정 (저장 시 일시 기준으로 재정렬 → 순번도 맞춰짐)
+function editDate(id,td){
+  if(td.querySelector('input')) return; // 이미 편집 중
+  const h=state.history.find(x=>x.id===id); if(!h) return;
+  td.innerHTML=`<input type="datetime-local" value="${toLocalDT(new Date(h.createdAt))}"> <button class="btn teal sm" title="저장">✓</button>`;
+  const inp=td.querySelector('input'), btn=td.querySelector('button');
+  const done=()=>{
+    if(!inp.value) return toast('일시를 입력해주세요');
+    h.createdAt=new Date(inp.value).toISOString();
+    state.history.sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+    save(LS.history,state.history); renderHistory(); toast('일시 수정됨 — 순서 재정렬');
+  };
+  btn.addEventListener('click',e=>{e.stopPropagation();done();});
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter')done();
+    if(e.key==='Escape')renderHistory();
+  });
+  inp.focus();
 }
 // 기록 표의 맵 칸 클릭 → 드롭다운으로 맵 수정
 function editMap(id,td){

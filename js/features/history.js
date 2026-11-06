@@ -21,7 +21,7 @@ function render() {
       ? `<span class="${h.winner === 'A' ? 'w' : ''}">${h.score.A}</span> : <span class="${h.winner === 'B' ? 'w' : ''}">${h.score.B}</span>`
       : '<span style="color:var(--muted)">–</span>';
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="sm">${state.history.length - i}</td><td class="sm hide-m">${ds}${h.manual ? ' ✍' : ''}</td>
+    tr.innerHTML = `<td class="sm">${state.history.length - i}</td><td class="sm hide-m dt" data-dt="${h.id}" title="클릭해서 일시 수정 (순서는 일시 기준 정렬)">${ds}${h.manual ? ' ✍' : ''}</td>
       <td class="mp" data-mp="${h.id}" title="클릭해서 맵 수정"><span class="pill" style="background:${m.color};color:#0f1419;margin-right:6px">${m.en}</span></td>
       <td class="score rj" data-sc="${h.id}" title="클릭해서 스코어 입력/수정">${sc}</td>
       <td><span class="pill ${h.teams.A.side.toLowerCase()}">${h.teams.A.side}</span> ${esc(h.teams.A.name)}</td>
@@ -36,6 +36,26 @@ function render() {
   }));
   tb.querySelectorAll('td[data-sc]').forEach(td => td.addEventListener('click', () => editScore(td.dataset.sc, td)));
   tb.querySelectorAll('td[data-mp]').forEach(td => td.addEventListener('click', () => editMap(td.dataset.mp, td)));
+  tb.querySelectorAll('td[data-dt]').forEach(td => td.addEventListener('click', () => editDate(td.dataset.dt, td)));
+}
+
+/* 기록 표의 일시 칸 클릭 → 일시 수정 (adapter가 일시 기준 재정렬 → 순번도 맞춰짐) */
+function editDate(id, td) {
+  if (td.querySelector('input')) return; // 이미 편집 중
+  const h = state.history.find(x => x.id === id); if (!h) return;
+  td.innerHTML = `<input type="datetime-local" value="${toLocalDT(new Date(h.createdAt))}"> <button class="btn teal sm" title="저장">✓</button>`;
+  const inp = td.querySelector('input'), btn = td.querySelector('button');
+  const done = async () => {
+    if (!inp.value) return toast('일시를 입력해주세요');
+    state.history = await adapter.updateMatch(id, {createdAt: new Date(inp.value).toISOString()});
+    render(); toast('일시 수정됨 — 순서 재정렬');
+  };
+  btn.addEventListener('click', e => { e.stopPropagation(); done(); });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') done();
+    if (e.key === 'Escape') render();
+  });
+  inp.focus();
 }
 
 /* 기록 표의 맵 칸 클릭 → 드롭다운으로 맵 수정 */
