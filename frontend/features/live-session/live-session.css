@@ -1,0 +1,18 @@
+/* =========================================
+   features/live-session.css — 라이브 바 · 뷰어 모드
+   ========================================= */
+.live-bar{max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;gap:10px;font-size:13px;border-top:1px solid var(--line);flex-wrap:wrap}
+.live-bar b{letter-spacing:.04em}
+.live-bar .sid{color:var(--sub);font-family:monospace;font-size:12px}
+.live-dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
+.live-dot.on{background:var(--red);box-shadow:0 0 8px rgba(255,70,85,.8);animation:livepulse 1.2s ease infinite}
+@keyframes livepulse{50%{opacity:.5}}
+
+/* 뷰어 모드: 보기만 — 조작 전면 차단 (data-live-allow 만 예외) */
+body.live-viewer main .btn:not([data-live-allow]),
+body.live-viewer main input,
+body.live-viewer main select,
+body.live-viewer .chip,
+body.live-viewer nav .tab,
+body.live-viewer #btnReset{pointer-events:none;opacity:.55}
+body.live-viewer main #btnExport{pointer-events:auto;opacity:1} /* 기록 백업은 뷰어도 허용 */

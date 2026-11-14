@@ -17,6 +17,7 @@ export const state = {
   history: [],
   busy: false,
   savedCurrent: false, // 현재 매치가 이미 기록 저장됐는지 (중복 저장 방지)
+  liveViewer: false,   // 라이브 세션 시청 모드 (true면 조작 불가·로컬 저장 중단)
 };
 
 export const mapById = id => state.maps.find(m => m.id === id);

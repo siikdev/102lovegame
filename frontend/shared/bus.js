@@ -7,6 +7,7 @@
    - 'coin:reset'       코인을 idle 상태로 (sides 구독)
    - 'session:restored' 새로고침 복원 직후 (payload: 세션 데이터)
    - 'shortcut:primary' Space 단축키 (현재 단계 feature가 처리)
+   - 'state:changed'    의미 있는 상태 변화마다 (persistSession 이 발행 — live-session 방장이 구독)
 */
 const handlers = {};
 export const on = (ev, fn) => { (handlers[ev] ??= []).push(fn); };

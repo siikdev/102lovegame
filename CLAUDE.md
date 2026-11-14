@@ -23,14 +23,17 @@ file:// 로 열면 ES 모듈·fetch 차단 → 반드시 로컬 서버.
 
 ```
 frontend/
-  app/        부트스트랩·app.config.js(플래그·dataSource)·단계 내비
-  features/   기능별 폴더(js+css 공존): teams maps sides summary history keyboard
+  app/        부트스트랩·app.config.js(플래그·dataSource)·env.js(비밀값, gitignore)·단계 내비
+  features/   기능별 폴더(js+css 공존): teams maps sides summary history keyboard live-session
   shared/     state·bus(이벤트 버스)·storage·session·dom — feature 를 모름
   data/       adapter 팩토리 + adapters/(local=현행, http=백엔드 연동 지점) + maps.json
   styles/     전역 토큰·레이아웃·컴포넌트
-backend/      미구현 — README.md 에 API 계약·SQLite 스키마 (ADR-0001: 컨테이너 불필요)
+backend/      README.md(API 계약·SQLite 스키마) + supabase/schema.sql (라이브 세션, ADR-0002)
 docs/         ARCHITECTURE.md · adr/
+.github/      Pages 배포(Secrets→env.js 주입)·keep-alive — 플랫폼 고정 경로(루트 최소화 예외)
 ```
+
+비밀값 규칙: Supabase 키 등은 `frontend/app/env.js` (gitignore) 에만. 리포·커밋에 절대 넣지 않는다. 배포는 Actions Secrets 가 주입.
 
 ## 코드 규칙
 

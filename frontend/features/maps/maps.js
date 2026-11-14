@@ -48,7 +48,7 @@ function renderMap(rollingId) {
 }
 
 function rollMap() {
-  if (state.busy || state.mapLocked) return;
+  if (state.busy || state.mapLocked || state.liveViewer) return;
   if (state.pool.length === 0) return toast('맵 풀이 비어 있습니다');
   state.busy = true; emit('app:sync'); state.sides = null;
   const pool = [...state.pool];

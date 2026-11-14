@@ -16,8 +16,9 @@ import * as sides from '../features/sides/sides.js';
 import * as summary from '../features/summary/summary.js';
 import * as history from '../features/history/history.js';
 import * as keyboard from '../features/keyboard/keyboard.js';
+import * as liveSession from '../features/live-session/live-session.js';
 
-const FEATURES = [teams, maps, sides, summary, history, keyboard];
+const FEATURES = [teams, maps, sides, summary, history, keyboard, liveSession];
 const enabled = f => APP_CONFIG.features[f.id] !== false;
 
 async function boot() {
@@ -59,6 +60,11 @@ async function boot() {
     setStep(1);
     toast('새 매치 시작 (플레이어 입력은 유지)');
   });
+
+  if (state.liveViewer) { // 라이브 시청 모드: live-session 이 이미 원격 상태를 적용함
+    emit('app:sync');
+    return;
+  }
 
   if (restored) emit('session:restored', restored);
   emit('app:refresh'); emit('app:sync');

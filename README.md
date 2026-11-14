@@ -23,6 +23,7 @@ python3 -m http.server 8787
 - **매치 요약**: 스코어 입력, 복사, 저장, 🔁 같은 팀 한판 더
 - **매치 기록**: 일시/맵/스코어 **클릭 인라인 수정**(일시 변경 시 자동 재정렬), ✍️ 수동 추가, 📥 JSON 가져오기(병합·중복 자동 건너뜀), JSON 내보내기
 - **세션 복원**: 진행 중 매치가 새로고침에도 유지
+- **🔴 라이브 세션**: 방장이 "라이브" 버튼 → 생성된 링크(`#/s/<id>`)를 공유 → 멤버들이 사다리·룰렛·코인·기록을 **실시간 시청** (Supabase Realtime, 뷰어는 조작 불가)
 - 단축키: `Space` 현재 단계 랜덤 액션
 
 ## 데이터 (중요)
@@ -35,13 +36,15 @@ python3 -m http.server 8787
 
 ```
 frontend/   앱 (app/ features/ shared/ data/ styles/) — 기능별 폴더에 js+css 공존
-backend/    백엔드 계획: API 계약 · SQLite 스키마 (README.md)
+backend/    백엔드 계획(API 계약·SQLite 스키마) + supabase/schema.sql (라이브 세션 DB)
 docs/       ARCHITECTURE.md(워크플로우·디버깅 가이드) · GIT_WORKFLOW.md · adr/(의사결정)
 legacy/     초기 단일 HTML
+.github/    Pages 배포(Secrets→env 주입) · Supabase keep-alive 워크플로우
 ```
 
 - **기능 켜고 끄기**: `frontend/app/app.config.js` 의 `features` 에서 true/false
 - **데이터 소스 교체**: 같은 파일 `dataSource: 'local' | 'http'` — 백엔드 붙일 때 adapter만 구현
+- **비밀값**: `frontend/app/env.js` (gitignore — `env.example.js` 복사해 생성). 배포는 Actions Secrets(`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`)가 자동 주입
 - 기여 방식: 기능별 `feat/<이름>` 브랜치 + 워크트리, rebase 후 ff-only 병합 (docs/GIT_WORKFLOW.md)
 
 ## 로드맵

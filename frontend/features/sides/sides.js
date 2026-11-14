@@ -26,7 +26,7 @@ function renderSide() {
 }
 
 function flipSide() {
-  if (state.busy) return;
+  if (state.busy || state.liveViewer) return;
   state.busy = true; emit('app:sync');
   const aAtk = rnd(2) === 0;
   const coin = $('#coin'), inner = coin.querySelector('.inner');

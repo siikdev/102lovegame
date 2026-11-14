@@ -13,6 +13,7 @@
 │   ├── app/                조립 계층 — 여기만 feature 를 안다
 │   │   ├── main.js         부트스트랩: 설정 읽기 → 켜진 기능만 init
 │   │   ├── app.config.js   ★ 기능 on/off 플래그 · dataSource 선택
+│   │   ├── env.js          비밀값 (gitignore — 템플릿 env.example.js, 배포는 CI가 Secrets로 생성)
 │   │   └── steps.js        1→2→3 단계 내비게이션
 │   ├── features/           기능 단위 (서로 직접 import 금지)
 │   │   ├── teams/          티어 입력 · 팀 랜덤 배정(사다리)
@@ -20,7 +21,8 @@
 │   │   ├── sides/          공수 코인토스
 │   │   ├── summary/        매치 요약 · 스코어 · 저장 · 한판 더
 │   │   ├── history/        기록 테이블 · 인라인 수정 · 수동 추가 · 내보내기
-│   │   └── keyboard/       Space 단축키
+│   │   ├── keyboard/       Space 단축키
+│   │   └── live-session/   🔴 실시간 세션 송출/시청 (Supabase Realtime, ADR-0002)
 │   ├── shared/             공용 인프라 (feature 를 모름)
 │   │   ├── state.js        공유 상태 (JSON 직렬화 가능 유지)
 │   │   ├── bus.js          이벤트 버스 — feature 간 유일한 통신로
@@ -32,9 +34,22 @@
 │   │   ├── adapters/       local(현재) · http(백엔드 연동 지점)
 │   │   └── maps.json       맵 마스터 데이터
 │   └── styles/             전역 CSS (토큰 · 레이아웃 · 컴포넌트)
-├── backend/                 백엔드 (계획 — README 에 API 계약)
+├── backend/                 백엔드 (계획 — README 에 API 계약) + supabase/schema.sql (라이브 세션 DB)
 ├── docs/                   이 문서 · ADR(의사결정 기록)
-└── legacy/                 초기 단일 HTML (기능 동일 · 참고용)
+├── legacy/                 초기 단일 HTML (기능 동일 · 참고용)
+└── .github/workflows/      Pages 배포(Secrets→env.js 주입) · Supabase keep-alive  ※ 플랫폼 고정 경로
+```
+
+### live-session 동작 (ADR-0002)
+
+```
+방장: 상태 변화 → persistSession → bus 'state:changed' → debounce 300ms
+      → RPC update_session_state → Postgres(sessions.state)
+뷰어: #/s/<id> 접속 → 초기 SELECT → Realtime(postgres_changes) 구독
+      → applyState → 기존 렌더 파이프라인(app:refresh) 재사용 · 조작은 CSS+가드로 차단
+기록: 방장이 diff upsert(session_matches) + 8초 안전망 / 뷰어는 INSERT/UPDATE 실시간 수신
+보안: 쓰기는 host_token 검증 RPC만 (RLS: 직접 쓰기 전면 거부, 읽기는 링크 소지자)
+한계(v1): 뷰어는 룰렛/사다리 중간 애니메이션이 아니라 확정 결과를 받음 · 기록 DELETE는 실시간 미반영(새로고침 시 반영)
 ```
 
 의존 방향(한 방향만): `features → shared/app/data`, `app → 전부`, `shared/data → (feature 모름)`

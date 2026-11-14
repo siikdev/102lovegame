@@ -1,0 +1,17 @@
+# Supabase 무료 티어는 7일 무활동 시 일시정지됨 → 3일마다 가벼운 쿼리로 깨어있게 유지
+name: Supabase keep-alive
+on:
+  schedule:
+    - cron: '0 3 */3 * *' # 3일마다 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: sessions 테이블 1행 조회
+        run: |
+          curl -sf "${{ secrets.SUPABASE_URL }}/rest/v1/sessions?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
+            -o /dev/null && echo "alive"

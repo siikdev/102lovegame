@@ -22,5 +22,9 @@ export const APP_CONFIG = {
     history: true,        // 매치 기록 테이블·수동 추가·JSON 내보내기
     keyboard: true,       // Space 단축키
     sessionRestore: true, // 새로고침 시 진행 중 매치 복원
+    liveSession: true,    // 🔴 실시간 내전 세션 공유 (Supabase, ADR-0002)
   },
+
+  // Supabase 접속 정보는 여기 두지 않는다 — frontend/app/env.js (gitignore 됨, env.example.js 참고)
+  // 배포 시엔 GitHub Actions 가 Secrets 로 env.js 를 생성해 주입 (.github/workflows/deploy.yml)
 };

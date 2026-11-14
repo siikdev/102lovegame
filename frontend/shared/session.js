@@ -3,15 +3,19 @@
 import { LS, load, save } from './storage.js';
 import { state } from './state.js';
 import { $ } from './dom.js';
+import { emit } from './bus.js';
 import { APP_CONFIG } from '../app/app.config.js';
 
 export function persistSession() {
-  if (APP_CONFIG.features.sessionRestore === false) return;
-  save(LS.session, {
-    teams: state.teams, map: state.map, mapLocked: state.mapLocked, sides: state.sides,
-    step: state.step, savedCurrent: state.savedCurrent,
-    score: [$('#scoreA')?.value ?? '', $('#scoreB')?.value ?? ''],
-  });
+  if (state.liveViewer) return; // 라이브 시청 모드: 원격 상태를 내 로컬 세션으로 덮지 않음
+  if (APP_CONFIG.features.sessionRestore !== false) {
+    save(LS.session, {
+      teams: state.teams, map: state.map, mapLocked: state.mapLocked, sides: state.sides,
+      step: state.step, savedCurrent: state.savedCurrent,
+      score: [$('#scoreA')?.value ?? '', $('#scoreB')?.value ?? ''],
+    });
+  }
+  emit('state:changed'); // 모든 의미 있는 상태 변화의 공용 신호 (live-session 방장이 구독해 원격 push)
 }
 
 /* 복원되면 세션 데이터를 반환, 없거나 꺼져 있으면 null */

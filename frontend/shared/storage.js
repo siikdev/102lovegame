@@ -6,6 +6,7 @@ export const LS = {
   pool:      'vb.pool.v1',
   history:   'vb.history.v1',
   session:   'vb.session.v1',
+  liveHost:  'vb.liveHost.v1', // {세션id: host_token} — 라이브 세션 방장 증명
 };
 
 export const load = (k, d) => {

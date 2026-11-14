@@ -90,7 +90,7 @@ function buildLadders() {
 }
 
 function shuffleTeams() {
-  if (state.busy) return;
+  if (state.busy || state.liveViewer) return;
   const filled = state.players.flat().filter(Boolean).length;
   if (filled === 0) return toast('플레이어를 한 명 이상 입력해주세요');
   state.busy = true; emit('app:sync');

@@ -5,6 +5,11 @@
 .DS_Store
 Thumbs.db
 
+# 비밀값 — 커밋 금지 (템플릿: frontend/app/env.example.js)
+frontend/app/env.js
+.env
+.env.*
+
 # 추후 백엔드/툴링 대비
 node_modules/
 *.log
