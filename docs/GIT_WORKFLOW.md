@@ -47,6 +47,25 @@ git branch -d feat/stats
 - `--ff-only` 가 실패하면 = rebase 가 안 된 것 → 병합하지 말고 rebase 부터
 - force-push 금지 (원격 생기면 피처 브랜치만 `--force-with-lease` 허용, main 절대 금지)
 
+## 외부 기여 (친구 포함 — 전원 fork + PR)
+
+collaborator 는 두지 않는다. **리포에 push 할 수 있는 사람은 소유자뿐**이고, 친구·외부인 모두 같은 경로:
+
+```
+fork → feat/<기능> 브랜치 → 작업 → 자기 fork 에 push → 원본에 Pull Request
+```
+
+- PR 작성자 계정을 보고 소유자가 병합 여부 판단 (아는 사람인지 확인이 곧 심사 1단계)
+- 기여 PR 이 지킬 것: CLAUDE.md 하네스 4규칙 · feature flag · `node --check` 통과 · 문서 동반 갱신
+- fork PR 은 Actions **Secrets 에 접근 불가**(GitHub 기본) — 키 유출 경로 없음
+
+### PR 병합 방식 (리포 설정: merge commit 끔, squash+rebase 켬 — 선형 이력 유지)
+
+| 상황 | 버튼 |
+|---|---|
+| 외부/친구 PR (커밋이 정돈 안 됨) | **Squash and merge** (기본) — 1커밋으로 뭉치고 메시지를 Conventional Commits 로 다듬기 |
+| 정돈된 PR (커밋 단위가 의미 있음) | **Rebase and merge** — 커밋 그대로 보존 |
+
 ## 버전 관리
 
 - 의미 있는 묶음이 main 에 합쳐지면 태그: `git tag -a v0.2.0 -m "요약"`
