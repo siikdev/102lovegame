@@ -82,6 +82,19 @@ begin
 end;
 $$;
 
+-- [RPC] 방송 종료 — 방장만. 세션 행 삭제 (session_matches 는 cascade 삭제)
+create or replace function public.end_session(p_id text, p_host_token text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from sessions where id = p_id and host_token = p_host_token;
+  return found;
+end;
+$$;
+
 -- Realtime 발행 (이미 추가돼 있으면 건너뜀)
 do $$
 begin

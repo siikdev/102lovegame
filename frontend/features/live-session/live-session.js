@@ -132,12 +132,21 @@ async function pushMatches() {
   } catch (e) { console.error(e); }
 }
 
-function endSession() {
+/* 방송 종료: 시청자에게 종료 알림(ended) push → 세션 DB 삭제 → 로비 목록에서 즉시 제거.
+   방장의 로컬 상태/기록은 그대로 보존된다. */
+async function endSession() {
+  const sid = sessionId, token = hostToken;
   clearTimeout(pushTimer); clearInterval(matchTimer); clearInterval(heartbeatTimer);
   sessionId = null; hostToken = null; lastPushed = new Map();
+  try {
+    const sb = await getClient();
+    await sb.rpc('update_session_state', { p_id: sid, p_host_token: token, p_state: { ended: true } });
+    await sb.rpc('end_session', { p_id: sid, p_host_token: token });
+    const tokens = load(LS.liveHost, {}); delete tokens[sid]; save(LS.liveHost, tokens);
+  } catch (e) { console.error(e); }
   location.hash = '';
   renderBar();
-  toast('송출 종료 (기록은 그대로 보존됨)');
+  toast('방송 종료 — 시청자는 로비로 안내되고, 내 기록은 보존됩니다');
   showLobby(); // 방송 끝 → 로비로
 }
 
@@ -147,6 +156,7 @@ async function joinAsViewer(sid) {
     const sb = await getClient();
     const { data: row, error } = await sb.from('sessions').select('state').eq('id', sid).single();
     if (error || !row) throw (error || new Error('세션 없음'));
+    if (row.state?.ended) { toast('이미 종료된 방송입니다'); location.hash = ''; showLobby(); return; }
     sessionId = sid;
     state.liveViewer = true;
     document.body.classList.add('live-viewer');
@@ -174,6 +184,11 @@ async function joinAsViewer(sid) {
 
 function applyState(s) {
   if (!s) return;
+  if (s.ended) { // 방장이 방송을 종료함
+    toast('방송이 종료되었습니다 — 로비로 이동합니다');
+    setTimeout(leaveSession, 1500);
+    return;
+  }
   state.players = s.players ?? state.players;
   state.tierNames = s.tierNames ?? state.tierNames;
   state.teamNames = s.teamNames ?? state.teamNames;
@@ -239,7 +254,7 @@ async function refreshLobby() {
       .order('updated_at', { ascending: false })
       .limit(12);
     if (error) throw error;
-    renderLobbyCards(data || []);
+    renderLobbyCards((data || []).filter(s => !s.state?.ended)); // 종료 처리 중인 방송 제외
   } catch (e) { console.error(e); renderLobbyCards([]); }
 }
 
@@ -286,7 +301,7 @@ function renderBar() {
     bar.innerHTML = `<span class="live-dot on" id="liveDot"></span><b>LIVE 송출 중</b>
       <span class="sid">#/s/${sessionId}</span>
       <button class="btn ghost sm" id="btnLiveCopy" data-live-allow>🔗 링크 복사</button>
-      <button class="btn ghost sm" id="btnLiveEnd" data-live-allow>송출 종료</button>`;
+      <button class="btn ghost sm" id="btnLiveEnd" data-live-allow>⏹ 방송 종료</button>`;
     $('#btnLiveCopy').addEventListener('click', copyLink);
     $('#btnLiveEnd').addEventListener('click', endSession);
   } else {
