@@ -74,6 +74,7 @@ async function copyLink() {
 async function startSession() {
   if (state.busy) return;
   if (sessionId && hostToken) return copyLink(); // 이미 송출 중이면 링크만
+  hideLobby();
   try {
     const sb = await getClient();
     const sid = rnd36(8), token = crypto.randomUUID();
@@ -137,6 +138,7 @@ function endSession() {
   location.hash = '';
   renderBar();
   toast('송출 종료 (기록은 그대로 보존됨)');
+  showLobby(); // 방송 끝 → 로비로
 }
 
 /* ---------- 뷰어 (시청) ---------- */
@@ -209,9 +211,25 @@ function leaveSession() {
   location.reload(); // 내 로컬 상태로 깔끔히 복귀
 }
 
-/* ---------- 세션 브라우저 (링크 없이도 목록에서 골라 입장) ---------- */
-async function showBrowser(auto = false) {
-  if (sessionId) return; // 이미 송출/시청 중
+/* ---------- 로비 (접속 첫 화면 — 인터넷 방송처럼 방송 선택/시작) ---------- */
+let lobbyTimer = null;
+
+async function showLobby() {
+  if (state.liveViewer || (sessionId && hostToken)) return; // 방송/시청 중엔 로비 금지
+  document.body.classList.add('in-lobby');
+  const lb = $('#lobby'); if (lb) lb.hidden = false;
+  refreshLobby();
+  clearInterval(lobbyTimer);
+  lobbyTimer = setInterval(refreshLobby, 10000); // 로비에 있는 동안 10초마다 갱신
+}
+
+function hideLobby() {
+  clearInterval(lobbyTimer); lobbyTimer = null;
+  document.body.classList.remove('in-lobby');
+  const lb = $('#lobby'); if (lb) lb.hidden = true;
+}
+
+async function refreshLobby() {
   try {
     const sb = await getClient();
     const since = new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString();
@@ -219,32 +237,30 @@ async function showBrowser(auto = false) {
       .select('id, updated_at, state')
       .gt('updated_at', since)
       .order('updated_at', { ascending: false })
-      .limit(10);
+      .limit(12);
     if (error) throw error;
-    const list = data || [];
-    if (auto && !list.length) return; // 접속 시 자동 체크: 없으면 조용히
-    renderBrowser(list);
-  } catch (e) { console.error(e); if (!auto) toast('라이브 목록을 불러오지 못했습니다'); }
+    renderLobbyCards(data || []);
+  } catch (e) { console.error(e); renderLobbyCards([]); }
 }
 
-function renderBrowser(list) {
-  const bar = $('#liveBar'); if (!bar || sessionId) return;
-  bar.hidden = false;
+function renderLobbyCards(list) {
+  const g = $('#lobbyGrid'); if (!g) return;
   const tokens = load(LS.liveHost, {});
-  const items = list.length ? list.map(s => {
-    const title = Array.isArray(s.state?.teamNames) ? s.state.teamNames.join(' vs ') : s.id;
+  g.innerHTML = list.length ? list.map(s => {
+    const st = s.state || {};
+    const title = Array.isArray(st.teamNames) ? st.teamNames.join('  vs  ') : s.id;
+    const step = st.step === 3 ? '⚔️ 경기 진행' : st.step === 2 ? '🗺️ 맵 선택 중' : '🎲 팀 구성 중';
     const min = Math.max(0, Math.round((Date.now() - new Date(s.updated_at).getTime()) / 60000));
-    const mine = tokens[s.id] ? ' 🎙 내 세션' : '';
-    return `<button class="btn ghost sm live-item" data-sid="${esc(s.id)}">👁 ${esc(title)}${mine} <span class="hint">${min ? min + '분 전' : '방금'}</span></button>`;
-  }).join('') : `<span class="hint">진행 중인 라이브가 없습니다</span>`;
-  bar.innerHTML = `<span class="live-dot on"></span><b>라이브</b>
-    <button class="btn teal sm" id="btnLiveNew" data-live-allow>🔴 새 세션 시작</button>
-    ${items}
-    <button class="btn ghost sm" id="btnLiveHide" data-live-allow>닫기</button>`;
-  $('#btnLiveNew').addEventListener('click', startSession);
-  $('#btnLiveHide').addEventListener('click', () => { bar.hidden = true; });
-  bar.querySelectorAll('.live-item').forEach(b =>
-    b.addEventListener('click', () => selectSession(b.dataset.sid)));
+    const mine = !!tokens[s.id];
+    return `<button class="lobby-card" data-sid="${esc(s.id)}">
+      <span class="lc-live">${mine ? '🎙 내 방송' : '🔴 LIVE'}</span>
+      <span class="lc-title">${esc(title)}</span>
+      <span class="lc-meta">${step} · ${min ? min + '분 전' : '방금'} 활동</span>
+      <span class="lc-join">${mine ? '송출 재개 →' : '시청하기 →'}</span>
+    </button>`;
+  }).join('') : '<div class="lobby-empty">지금 진행 중인 라이브가 없습니다 — 새 라이브를 시작해보세요!</div>';
+  g.querySelectorAll('.lobby-card').forEach(b =>
+    b.addEventListener('click', () => { hideLobby(); selectSession(b.dataset.sid); }));
 }
 
 /* 목록에서 세션 선택: 내 세션이면 송출 재개, 아니면 시청 입장 */
@@ -284,17 +300,23 @@ function renderBar() {
 
 /* ---------- init ---------- */
 export async function init() {
-  // 라이브 버튼: 송출 중이면 링크 복사, 아니면 세션 브라우저 열기
+  // 헤더 라이브 버튼: 송출 중이면 링크 복사, 아니면 로비로
   $('#btnLive')?.addEventListener('click', () => {
     if (sessionId && hostToken) copyLink();
-    else showBrowser(false);
+    else showLobby();
   });
+  // 로비 버튼
+  $('#btnLobbyNew')?.addEventListener('click', startSession);
+  $('#btnLobbyLocal')?.addEventListener('click', () => { hideLobby(); toast('로컬 모드 — 헤더 🔴 라이브로 언제든 로비 복귀'); });
+
   on('state:changed', schedulePush);                       // 방장: 상태 push
   on('history:changed', () => { if (hostToken) pushMatches(); }); // 방장: 기록 push
+
   const sid = parseHash();
   if (sid) {
+    // 공유 링크로 진입 → 로비 건너뛰고 바로 해당 세션으로
     const tokens = load(LS.liveHost, {});
-    if (tokens[sid]) { // 방장이 새로고침한 경우 — 송출 재개
+    if (tokens[sid]) { // 방장이 새로고침/재접속 — 송출 재개
       sessionId = sid; hostToken = tokens[sid];
       startHostLoops(); schedulePush();
     } else {
@@ -303,6 +325,6 @@ export async function init() {
     renderBar();
   } else {
     renderBar();
-    showBrowser(true); // 접속 시 진행 중 라이브가 있으면 목록 자동 표시
+    showLobby(); // 접속 첫 화면 = 로비 (인터넷 방송 스타일)
   }
 }
