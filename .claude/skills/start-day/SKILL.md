@@ -9,7 +9,7 @@ description: 작업 세션 시작 브리핑 — 지난 작업·현재 상태·�
 
 ## 절차
 
-1. **핸드오프 읽기**: `docs/HANDOFF.md` (마지막 세션이 남긴 상태). 없거나 오래됐으면 git log 로 재구성.
+1. **핸드오프 읽기**: `docs/HANDOFF.md` (마지막 세션이 남긴 상태) + `docs/BACKLOG.md` 상위 항목. 없거나 오래됐으면 git log 로 재구성.
 2. **리포 상태 수집** (병렬로):
    - `git fetch origin -q && git status -sb` — 로컬/원격 동기화·미커밋 확인
    - `git branch -a && git worktree list` — 진행 중인 피처 브랜치/워크트리

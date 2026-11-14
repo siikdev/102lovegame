@@ -22,6 +22,17 @@
 | `clearHistory()` | `DELETE /api/matches` |
 | `importMatches(records)` | `POST /api/import` |
 
+### 라이브 세션 (현재 Supabase RPC 로 구현 — 자체 백엔드 전환 시 동일 계약)
+
+현행 구현·상세 스키마는 `backend/supabase/schema.sql` 과 `docs/DATA.md` 참고.
+
+| 기능 | 현행 (Supabase RPC) | 자체 백엔드 시 |
+|---|---|---|
+| 세션 생성/상태 push | create_session / update_session_state | `POST /api/sessions`, `PATCH /api/sessions/:id/state` |
+| 세션 경기 기록 | add/delete_session_match | `PUT/DELETE /api/sessions/:id/matches/:mid` |
+| 종료(아카이브)/삭제 | end_session / delete_session | `POST /api/sessions/:id/end`, `DELETE /api/sessions/:id` |
+| 실시간 중계 | Supabase Realtime (postgres_changes) | WebSocket/SSE |
+
 추후 기능용 (frontend adapter 에 메서드 추가하며 확장):
 
 | 기능 | HTTP |
