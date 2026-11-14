@@ -25,6 +25,13 @@ export const APP_CONFIG = {
     liveSession: true,    // 🔴 실시간 내전 세션 공유 (Supabase, ADR-0002)
   },
 
+  // 공정성 장치 — 난수는 항상 crypto 기반 (shared/dom.js rnd)
+  fairness: {
+    // 이번 내전 세션(새벽 6시 기준 "오늘")에 이미 나온 맵은 룰렛 후보에서 자동 제외.
+    // 전부 나왔으면 자동 해제. false 로 끄기.
+    excludePlayedMaps: true,
+  },
+
   // Supabase 접속 정보는 여기 두지 않는다 — frontend/app/env.js (gitignore 됨, env.example.js 참고)
   // 배포 시엔 GitHub Actions 가 Secrets 로 env.js 를 생성해 주입 (.github/workflows/deploy.yml)
 };

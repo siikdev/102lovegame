@@ -5,8 +5,23 @@ import { LS, save } from '../../shared/storage.js';
 import { persistSession } from '../../shared/session.js';
 import { setStep } from '../../app/steps.js';
 import { on, emit } from '../../shared/bus.js';
+import { APP_CONFIG } from '../../app/app.config.js';
 
 export const id = 'maps';
+
+/* "오늘 내전" 경계 = 새벽 6시 (자정 넘는 내전도 한 세션으로) */
+function sessionCutoff() {
+  const d = new Date();
+  if (d.getHours() < 6) d.setDate(d.getDate() - 1);
+  d.setHours(6, 0, 0, 0);
+  return d.toISOString();
+}
+/* 오늘 세션에서 이미 저장된 기록의 맵 id 목록 */
+function playedToday() {
+  if (APP_CONFIG.fairness?.excludePlayedMaps === false) return [];
+  const cutoff = sessionCutoff();
+  return [...new Set(state.history.filter(h => String(h.createdAt) >= cutoff).map(h => h.map))];
+}
 
 function renderPool() {
   const p = $('#pool'); p.innerHTML = '';
@@ -26,7 +41,8 @@ function renderPool() {
     });
     p.appendChild(b);
   });
-  $('#poolCount').textContent = `${state.pool.length}/${state.maps.length}`;
+  const played = playedToday().filter(mid => state.pool.includes(mid));
+  $('#poolCount').textContent = `${state.pool.length}/${state.maps.length}` + (played.length ? ` · 오늘 나온 ${played.length}맵 자동 제외` : '');
 }
 
 function renderMap(rollingId) {
@@ -51,7 +67,13 @@ function rollMap() {
   if (state.busy || state.mapLocked || state.liveViewer) return;
   if (state.pool.length === 0) return toast('맵 풀이 비어 있습니다');
   state.busy = true; emit('app:sync'); state.sides = null;
-  const pool = [...state.pool];
+  let pool = [...state.pool];
+  // fairness: 오늘 세션에 이미 나온 맵은 후보 제외 (전부 나왔으면 자동 해제)
+  const played = playedToday();
+  if (played.length) {
+    const filtered = pool.filter(mid => !played.includes(mid));
+    if (filtered.length >= 1) pool = filtered;
+  }
   // 다시 돌리기 시 같은 맵 방지 (풀이 1개면 불가)
   const cand = pool.length > 1 && state.map ? pool.filter(x => x !== state.map) : pool;
   const finalId = cand[rnd(cand.length)];

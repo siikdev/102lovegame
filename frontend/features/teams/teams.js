@@ -97,7 +97,7 @@ function shuffleTeams() {
   state.teams = null; state.map = null; state.mapLocked = false; state.sides = null;
   $('#ladderA').classList.add('on'); $('#ladderB').classList.add('on');
 
-  // 최종 결과 미리 결정 (티어별 코인 플립)
+  // 최종 결과 미리 결정 (티어별 코인 플립 — crypto 난수)
   const flips = Array.from({length: TIERS}, () => rnd(2));
   const final = {A: [], B: []};
   for (let t = 0; t < TIERS; t++) {
