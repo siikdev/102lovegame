@@ -52,7 +52,11 @@ const meter = (v, label) => `
   <span class="meter-val">${v === null ? '–' : v + '%'}</span>${label ?? ''}`;
 const formDots = form => `<span class="form">${form.map(r =>
   `<i class="fd fd-${r.toLowerCase()}">${r}</i>`).join('')}</span>`;
-const sessTitle = s => Array.isArray(s?.state?.teamNames) ? s.state.teamNames.join(' vs ') : (s?.id ?? '');
+/* 세션 표시 이름: 방 이름(state.title) 우선, 구버전 팀명 조합 fallback */
+const sessTitle = s =>
+  s?.state?.title
+  || (Array.isArray(s?.state?.teamNames) ? s.state.teamNames.join(' vs ') : '')
+  || (s?.id ?? '');
 
 /* ---------- 렌더 ---------- */
 function render() {
@@ -184,4 +188,8 @@ export function init() {
   document.querySelectorAll('#archTabs .atab').forEach(b =>
     b.addEventListener('click', () => { tab = b.dataset.tab; selected = null; render(); }));
   on('archive:open', openArchive);
+  on('lobby:open', () => { // 로고 클릭 등 — 전적 화면이 열려 있으면 닫는다
+    document.body.classList.remove('in-archive');
+    const a = $('#archive'); if (a) a.hidden = true;
+  });
 }

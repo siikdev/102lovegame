@@ -1,6 +1,11 @@
 /* =========================================
-   features/live-session.css — 라이브 바 · 뷰어 모드
+   features/live-session.css — 라이브 바 · 뷰어 모드 · 로비
    ========================================= */
+header .logo{cursor:pointer}
+.live-bar .live-title{font-weight:900;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lobby-newform{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.lobby-newform input{height:44px;min-width:240px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:0 14px;font-size:15px;font-weight:700;text-align:center}
+.lobby-newform input:focus{border-color:var(--teal);outline:none}
 .live-bar{max-width:1180px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;gap:10px;font-size:13px;border-top:1px solid var(--line);flex-wrap:wrap}
 .live-bar b{letter-spacing:.04em}
 .live-bar .sid{color:var(--sub);font-family:monospace;font-size:12px}

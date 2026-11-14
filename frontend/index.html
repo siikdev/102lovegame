@@ -45,6 +45,11 @@
         <button class="btn primary lg" id="btnLobbyNew">🔴 새 라이브 시작</button>
         <button class="btn ghost lg" id="btnLobbyArchive">📊 전적 / 기록</button>
       </div>
+      <div class="lobby-newform" id="lobbyNewForm" hidden>
+        <input id="lobbyRoomName" maxlength="24" placeholder="방 이름" autocomplete="off">
+        <button class="btn primary" id="btnLobbyCreate">만들기</button>
+        <button class="btn ghost" id="btnLobbyCancel">취소</button>
+      </div>
     </div>
     <h3 class="lobby-h">진행 중인 라이브</h3>
     <div class="lobby-grid" id="lobbyGrid"><div class="lobby-empty">불러오는 중…</div></div>

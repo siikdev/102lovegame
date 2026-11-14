@@ -28,6 +28,7 @@ let heartbeatTimer = null;
 let viewerTimer = null;    // 뷰어 생존 확인 폴링 (모바일 WS 끊김 대비)
 let endedNotified = false; // 종료 안내 중복 방지
 let sessionStartAt = '';   // 방장: 이 세션 시작 시각 — 이후 저장된 기록만 세션에 push
+let sessionTitle = '';     // 방 이름 (로비 카드·방송 바·전적에 표시)
 let lastPushed = new Map(); // matchId -> JSON string (방장 diff 용)
 
 /* ---------- 공통 ---------- */
@@ -49,17 +50,23 @@ async function getClient() {
 function hostEntry(sid) {
   const v = load(LS.liveHost, {})[sid];
   if (!v) return null;
-  return typeof v === 'string' ? { token: v, at: '' } : v;
+  return typeof v === 'string' ? { token: v, at: '', title: '' } : v;
 }
 
 function snapshot() {
   return {
+    title: sessionTitle,
     players: state.players, tierNames: state.tierNames, teamNames: state.teamNames,
     pool: state.pool, teams: state.teams, map: state.map, mapLocked: state.mapLocked,
     sides: state.sides, step: state.step, savedCurrent: state.savedCurrent,
     score: [$('#scoreA')?.value ?? '', $('#scoreB')?.value ?? ''],
   };
 }
+
+/* 세션 표시 이름: 방 이름 우선, (구버전) 팀명 조합 fallback — archive 쪽에도 동일 헬퍼 존재 */
+const sessionDisplay = s =>
+  s?.title || (Array.isArray(s?.teamNames) ? s.teamNames.join(' vs ') : '') || '이름 없는 방';
+const defaultRoomName = () => { const d = new Date(); return `${d.getMonth() + 1}/${d.getDate()} 내전`; };
 
 function setLiveDot(ok) { $('#liveDot')?.classList.toggle('on', !!ok); }
 
@@ -75,9 +82,10 @@ async function copyLink() {
 }
 
 /* ---------- 방장 (송출) ---------- */
-async function startSession() {
+async function startSession(title) {
   if (state.busy) return;
   if (sessionId && hostToken) return copyLink(); // 이미 송출 중이면 링크만
+  sessionTitle = (title || '').trim() || defaultRoomName();
   hideLobby();
   try {
     const sb = await getClient();
@@ -86,7 +94,7 @@ async function startSession() {
     if (error) throw error;
     sessionId = sid; hostToken = token;
     sessionStartAt = new Date().toISOString();
-    const tokens = load(LS.liveHost, {}); tokens[sid] = { token, at: sessionStartAt }; save(LS.liveHost, tokens);
+    const tokens = load(LS.liveHost, {}); tokens[sid] = { token, at: sessionStartAt, title: sessionTitle }; save(LS.liveHost, tokens);
     location.hash = '#/s/' + sid;
     startHostLoops(); renderBar(); setLiveDot(true);
     await pushMatches();
@@ -191,7 +199,7 @@ async function joinAsViewer(sid) {
     const { data: row, error } = await sb.from('sessions').select('state').eq('id', sid).single();
     if (error || !row) throw (error || new Error('세션 없음'));
     if (row.state?.ended) { toast('이미 종료된 방송입니다'); location.hash = ''; showLobby(); return; }
-    sessionId = sid;
+    sessionId = sid; sessionTitle = row.state?.title || '';
     state.liveViewer = true;
     document.body.classList.add('live-viewer');
     applyState(row.state);
@@ -296,7 +304,7 @@ function renderLobbyCards(list) {
   const tokens = load(LS.liveHost, {});
   g.innerHTML = list.length ? list.map(s => {
     const st = s.state || {};
-    const title = Array.isArray(st.teamNames) ? st.teamNames.join('  vs  ') : s.id;
+    const title = sessionDisplay(st);
     const step = st.step === 3 ? '⚔️ 경기 진행' : st.step === 2 ? '🗺️ 맵 선택 중' : '🎲 팀 구성 중';
     const min = Math.max(0, Math.round((Date.now() - new Date(s.updated_at).getTime()) / 60000));
     const mine = !!tokens[s.id];
@@ -316,9 +324,9 @@ async function selectSession(sid) {
   const he = hostEntry(sid);
   location.hash = '#/s/' + sid;
   if (he) {
-    sessionId = sid; hostToken = he.token; sessionStartAt = he.at || '';
+    sessionId = sid; hostToken = he.token; sessionStartAt = he.at || ''; sessionTitle = he.title || '';
     startHostLoops(); schedulePush(); renderBar();
-    toast('내 세션 송출 재개!');
+    toast('내 방송 송출 재개!');
   } else {
     await joinAsViewer(sid);
   }
@@ -331,14 +339,16 @@ function renderBar() {
   if (!sessionId) { bar.hidden = true; btn?.removeAttribute('hidden'); return; }
   bar.hidden = false; btn?.setAttribute('hidden', '');
   if (hostToken) {
-    bar.innerHTML = `<span class="live-dot on" id="liveDot"></span><b>LIVE 송출 중</b>
+    bar.innerHTML = `<span class="live-dot on" id="liveDot"></span><b>LIVE</b>
+      <span class="live-title">${esc(sessionTitle || '내 방송')}</span>
       <span class="sid">#/s/${sessionId}</span>
       <button class="btn ghost sm" id="btnLiveCopy" data-live-allow>🔗 링크 복사</button>
       <button class="btn ghost sm" id="btnLiveEnd" data-live-allow>⏹ 방송 종료</button>`;
     $('#btnLiveCopy').addEventListener('click', copyLink);
     $('#btnLiveEnd').addEventListener('click', endSession);
   } else {
-    bar.innerHTML = `<span class="live-dot" id="liveDot"></span><b>라이브 시청 중</b>
+    bar.innerHTML = `<span class="live-dot" id="liveDot"></span><b>시청 중</b>
+      <span class="live-title">${esc(sessionTitle || '')}</span>
       <span class="sid">#/s/${sessionId}</span>
       <span class="hint">방장 화면이 실시간 반영됩니다 (조작 불가)</span>
       <button class="btn ghost sm" id="btnLiveLeave" data-live-allow>나가기</button>`;
@@ -353,11 +363,32 @@ export async function init() {
     if (sessionId && hostToken) copyLink();
     else showLobby();
   });
-  // 로비 버튼
-  $('#btnLobbyNew')?.addEventListener('click', startSession);
+  // 로비: 새 라이브 → 방 이름 입력 폼
+  $('#btnLobbyNew')?.addEventListener('click', () => {
+    const f = $('#lobbyNewForm'); if (!f) return;
+    f.hidden = !f.hidden;
+    if (!f.hidden) {
+      const inp = $('#lobbyRoomName');
+      if (!inp.value) inp.value = defaultRoomName();
+      inp.focus(); inp.select();
+    }
+  });
+  $('#btnLobbyCreate')?.addEventListener('click', () => startSession($('#lobbyRoomName')?.value));
+  $('#lobbyRoomName')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') startSession($('#lobbyRoomName').value);
+    if (e.key === 'Escape') $('#lobbyNewForm').hidden = true;
+  });
+  $('#btnLobbyCancel')?.addEventListener('click', () => { $('#lobbyNewForm').hidden = true; });
   $('#btnLobbyArchive')?.addEventListener('click', () => { hideLobby(); emit('archive:open'); });
   $('#btnLobbyLocal')?.addEventListener('click', () => { hideLobby(); toast('로컬 모드 — 헤더 🔴 라이브로 언제든 로비 복귀'); });
   on('lobby:open', showLobby); // 전적 화면 뒤로가기 등
+
+  // 로고 클릭 = 기본 화면(로비)으로 (방송 중엔 보호, 시청 중엔 나가기)
+  document.querySelector('header .logo')?.addEventListener('click', () => {
+    if (sessionId && hostToken) return toast('방송 중입니다 — 끝내려면 ⏹ 방송 종료');
+    if (state.liveViewer) return leaveSession();
+    emit('lobby:open');
+  });
 
   on('state:changed', schedulePush);                       // 방장: 상태 push
   on('history:changed', () => { if (hostToken) pushMatches(); }); // 방장: 기록 push
@@ -367,7 +398,7 @@ export async function init() {
     // 공유 링크로 진입 → 로비 건너뛰고 바로 해당 세션으로
     const he = hostEntry(sid);
     if (he) { // 방장이 새로고침/재접속 — 송출 재개
-      sessionId = sid; hostToken = he.token; sessionStartAt = he.at || '';
+      sessionId = sid; hostToken = he.token; sessionStartAt = he.at || ''; sessionTitle = he.title || '';
       startHostLoops(); schedulePush();
     } else {
       await joinAsViewer(sid);
