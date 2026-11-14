@@ -23,7 +23,8 @@
 │   │   ├── history/        기록 테이블 · 인라인 수정 · 수동 추가 · 내보내기
 │   │   ├── keyboard/       Space 단축키
 │   │   ├── live-session/   🔴 실시간 세션 송출/시청·로비 (Supabase Realtime, ADR-0002)
-│   │   └── archive/        📊 전적/기록 — 플레이어 승률·세션별 경기 (아카이브 조회)
+│   │   └── archive/        📊 전적 — 랭킹·개인(맵별 승률·경기)·세션 뷰. 집계는 stats.js 순수 함수
+│   │                        (요원별/K/D 확장 지점 = stats.js 하나. 멤버 이름 하드코딩 금지)
 │   ├── shared/             공용 인프라 (feature 를 모름)
 │   │   ├── state.js        공유 상태 (JSON 직렬화 가능 유지)
 │   │   ├── bus.js          이벤트 버스 — feature 간 유일한 통신로

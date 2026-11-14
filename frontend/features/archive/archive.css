@@ -1,25 +1,70 @@
 /* =========================================
-   features/archive.css — 📊 전적/기록 화면
+   features/archive.css — 📊 전적 (히어로 · 랭킹 · 개인 · 세션)
+   원칙: 승률 미터는 단일 색(틸), W/L 은 글자 배지(색에만 의존 X),
+         숫자·이름은 텍스트 토큰, 금색은 👑 1위 강조 전용
    ========================================= */
 body.in-archive header nav,
 body.in-archive .hright,
 body.in-archive main section.step,
 body.in-archive .hist{display:none!important}
-
 #archive{animation:fade .25s ease}
-.arch-grid{display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start}
 
-/* 플레이어 승률 표 */
-.arch-tbl table{width:100%;border-collapse:collapse;font-size:13px}
-.arch-tbl th{font-size:11px;color:var(--sub);font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
-.arch-tbl td{padding:8px;border-bottom:1px solid var(--line)}
-.arch-tbl tr:last-child td{border-bottom:none}
-.arch-tbl .an{font-weight:700}
-.arch-tbl .aw,.am-score .aw{color:var(--gold);font-weight:900}
-.arch-tbl .al{color:var(--sub)}
-.arch-tbl .awr{font-weight:900}
+/* ----- 히어로 타일 ----- */
+.arch-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.tile{display:flex;flex-direction:column;gap:4px;padding:16px 18px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);text-align:left}
+button.tile{cursor:pointer;transition:.15s}
+button.tile:hover{border-color:var(--sub)}
+.tile .tl{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.06em}
+.tile .tv{font-size:22px;font-weight:900;line-height:1.2}
+.tile .ts{font-size:12px;color:var(--sub)}
+.tile-top{border-color:rgba(245,196,81,.45);background:linear-gradient(180deg,rgba(245,196,81,.08),var(--card))}
+.tile-top .tv{color:var(--gold)}
 
-/* 세션별 경기 */
+/* ----- 탭 ----- */
+.arch-tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.atab{padding:10px 16px;font-weight:700;color:var(--sub);border-bottom:2px solid transparent}
+.atab.on{color:var(--text);border-bottom-color:var(--teal)}
+
+/* ----- 승률 미터 (단일 색) ----- */
+.meter{flex:1;min-width:90px;height:8px;background:var(--card2);border-radius:4px;overflow:hidden}
+.meter-fill{display:block;height:100%;background:var(--teal);border-radius:0 4px 4px 0;transition:width .3s}
+.meter-val{width:44px;text-align:right;font-weight:900;font-size:13px;font-variant-numeric:tabular-nums}
+
+/* ----- 최근 폼 (글자 배지) ----- */
+.form{display:inline-flex;gap:3px}
+.fd{width:18px;height:18px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;font-style:normal;flex:none}
+.fd-w{background:var(--teal);color:#06282a}
+.fd-l{background:var(--card2);color:var(--sub);border:1px solid var(--line)}
+.fd-d{background:var(--muted);color:var(--bg)}
+
+/* ----- 랭킹 행 ----- */
+.rrow{display:flex;align-items:center;gap:14px;width:100%;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;text-align:left;transition:.15s}
+.rrow:hover{border-color:var(--teal);transform:translateX(2px)}
+.rrow.first{border-color:rgba(245,196,81,.5)}
+.rrow .rn{width:22px;text-align:center;font-weight:900;color:var(--sub);font-size:14px}
+.rrow.first .rn{color:var(--gold)}
+.rrow .rname{width:90px;font-weight:900;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .rg{width:52px;font-size:12px;color:var(--sub)}
+.rrow .rwl{width:96px;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.rfoot{margin-top:10px;text-align:center}
+
+/* ----- 플레이어 상세 ----- */
+.prow-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.prow-head .pname{font-size:22px;font-weight:900}
+.prow-head .psum{color:var(--sub);font-size:13px}
+.pgrid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.mrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+.mrow:last-child{border-bottom:none}
+.mrow .sw{width:10px;height:10px;border-radius:2px;flex:none}
+.mrow .mname{width:84px;font-weight:700;font-size:13px}
+.mrow .mg{width:90px;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.pgames .grow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.pgames .grow:last-child{border-bottom:none}
+.gsc{font-weight:700;font-size:14px;white-space:nowrap}
+.gteam{font-weight:700;font-size:13px}
+.gsess{margin-left:auto}
+
+/* ----- 세션 목록 (기존 유지) ----- */
 .arch-sess{border:1px solid var(--line);border-radius:8px;background:var(--bg2);margin-bottom:10px;overflow:hidden}
 .arch-sess summary{padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;flex-wrap:wrap;list-style:none}
 .arch-sess summary::-webkit-details-marker{display:none}
@@ -27,6 +72,7 @@ body.in-archive .hist{display:none!important}
 .arch-sess[open] summary::before{transform:rotate(90deg)}
 .arch-match{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 30px;border-top:1px dashed var(--line);font-size:13px;flex-wrap:wrap}
 .am-score{font-weight:700;font-size:14px;white-space:nowrap}
+.am-score .aw,.aw{color:var(--gold);font-weight:900}
 .am-teams{font-weight:700}
 .am-pl{flex-basis:100%;padding-left:2px}
 
@@ -37,5 +83,13 @@ body.in-archive .hist{display:none!important}
 .linklike:hover{color:var(--text)}
 
 @media (max-width:980px){
-  .arch-grid{grid-template-columns:1fr}
+  .pgrid{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .arch-hero{grid-template-columns:1fr 1fr}
+  .tile-top{grid-column:1/-1}
+  .rrow{flex-wrap:wrap;gap:8px}
+  .rrow .meter{min-width:70px}
+  .rrow .rwl{width:auto}
+  .gsess{flex-basis:100%;margin-left:28px}
 }

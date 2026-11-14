@@ -54,13 +54,17 @@
   <!-- ================= 전적/기록 (feature: archive) ================= -->
   <section id="archive" data-feature="archive" hidden>
     <div class="sec-head">
-      <h2>📊 전적 / 기록 <small>라이브 세션에 기록된 경기 기준 — 종료된 세션의 기록도 영구 보존됩니다</small></h2>
+      <h2>📊 전적 <small>라이브 세션에 기록된 경기 기준 · 종료된 세션도 영구 보존</small></h2>
       <button class="btn ghost sm" id="btnArchBack">← 로비로</button>
     </div>
-    <div class="arch-grid">
-      <div class="card"><div class="ch"><h3>플레이어 승률</h3></div><div class="cb arch-tbl" id="archPlayers"></div></div>
-      <div class="card"><div class="ch"><h3>세션별 경기</h3></div><div class="cb" id="archSessions"></div></div>
+    <div class="arch-hero" id="archHero"></div>
+    <div class="arch-tabs" id="archTabs">
+      <button class="atab on" data-tab="rank">🏆 랭킹</button>
+      <button class="atab" data-tab="sessions">📅 세션</button>
     </div>
+    <div id="archRank"></div>
+    <div id="archSessions" hidden></div>
+    <div id="archPlayer" hidden></div>
   </section>
 
   <!-- ================= STEP 1: 팀 밸런스 ================= -->
