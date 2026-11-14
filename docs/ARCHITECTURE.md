@@ -22,7 +22,8 @@
 │   │   ├── summary/        매치 요약 · 스코어 · 저장 · 한판 더
 │   │   ├── history/        기록 테이블 · 인라인 수정 · 수동 추가 · 내보내기
 │   │   ├── keyboard/       Space 단축키
-│   │   └── live-session/   🔴 실시간 세션 송출/시청 (Supabase Realtime, ADR-0002)
+│   │   ├── live-session/   🔴 실시간 세션 송출/시청·로비 (Supabase Realtime, ADR-0002)
+│   │   └── archive/        📊 전적/기록 — 플레이어 승률·세션별 경기 (아카이브 조회)
 │   ├── shared/             공용 인프라 (feature 를 모름)
 │   │   ├── state.js        공유 상태 (JSON 직렬화 가능 유지)
 │   │   ├── bus.js          이벤트 버스 — feature 간 유일한 통신로
@@ -32,6 +33,7 @@
 │   ├── data/               데이터 접근 계층
 │   │   ├── index.js        adapter 팩토리 (dataSource 로 선택)
 │   │   ├── adapters/       local(현재) · http(백엔드 연동 지점)
+│   │   ├── supabase.js     Supabase 클라이언트 제공자 (live-session·archive 공유)
 │   │   └── maps.json       맵 마스터 데이터
 │   └── styles/             전역 CSS (토큰 · 레이아웃 · 컴포넌트)
 ├── backend/                 백엔드 (계획 — README 에 API 계약) + supabase/schema.sql (라이브 세션 DB)
@@ -51,6 +53,10 @@
 로비: 접속 첫 화면(해시 없을 때) — 진행 중 방송 카드 목록(10초 폴링) + 새 라이브/로컬 모드.
       공유 링크(#/s/<id>) 진입은 로비를 건너뛰고 바로 해당 세션으로.
       "활동 중" 판별 = 최근 30분 내 updated_at (방장 30초 하트비트가 갱신)
+종료: 방송 종료 = 삭제가 아니라 ended_at 아카이브 — 세션·경기 기록 영구 보존 → 📊 전적의 원천.
+      세션에는 "그 세션 중 저장된 기록"만 올라감 (sessionStartAt 필터)
+전적: archive feature 가 sessions+session_matches 를 읽어 클라이언트 집계
+      (수천 경기까지 충분 — 초과 시 SQL 뷰/백엔드 집계로 이전)
 보안: 쓰기는 host_token 검증 RPC만 (RLS: 직접 쓰기 전면 거부, 읽기는 사이트 방문자 전체 — 세션 목록 공개가 의도된 동작)
 한계(v1): 뷰어는 룰렛/사다리 중간 애니메이션이 아니라 확정 결과를 받음 · 기록 DELETE는 실시간 미반영(새로고침 시 반영)
 ```

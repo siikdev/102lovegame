@@ -23,6 +23,7 @@ export const APP_CONFIG = {
     keyboard: true,       // Space 단축키
     sessionRestore: true, // 새로고침 시 진행 중 매치 복원
     liveSession: true,    // 🔴 실시간 내전 세션 공유 (Supabase, ADR-0002)
+    archive: true,        // 📊 전적/기록 — 종료된 세션·플레이어 승률 (Supabase 아카이브 기반)
   },
 
   // 공정성 장치 — 난수는 항상 crypto 기반 (shared/dom.js rnd)

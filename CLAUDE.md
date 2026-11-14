@@ -24,7 +24,7 @@ file:// 로 열면 ES 모듈·fetch 차단 → 반드시 로컬 서버.
 ```
 frontend/
   app/        부트스트랩·app.config.js(플래그·dataSource)·env.js(비밀값, gitignore)·단계 내비
-  features/   기능별 폴더(js+css 공존): teams maps sides summary history keyboard live-session
+  features/   기능별 폴더(js+css 공존): teams maps sides summary history keyboard live-session archive
   shared/     state·bus(이벤트 버스)·storage·session·dom — feature 를 모름
   data/       adapter 팩토리 + adapters/(local=현행, http=백엔드 연동 지점) + maps.json
   styles/     전역 토큰·레이아웃·컴포넌트

@@ -8,6 +8,8 @@
    - 'session:restored' 새로고침 복원 직후 (payload: 세션 데이터)
    - 'shortcut:primary' Space 단축키 (현재 단계 feature가 처리)
    - 'state:changed'    의미 있는 상태 변화마다 (persistSession 이 발행 — live-session 방장이 구독)
+   - 'archive:open'     전적/기록 화면 열기 (로비 버튼이 발행 — archive 구독)
+   - 'lobby:open'       로비 화면 열기 (archive 뒤로가기가 발행 — live-session 구독)
 */
 const handlers = {};
 export const on = (ev, fn) => { (handlers[ev] ??= []).push(fn); };

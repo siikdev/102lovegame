@@ -17,8 +17,9 @@ import * as summary from '../features/summary/summary.js';
 import * as history from '../features/history/history.js';
 import * as keyboard from '../features/keyboard/keyboard.js';
 import * as liveSession from '../features/live-session/live-session.js';
+import * as archive from '../features/archive/archive.js';
 
-const FEATURES = [teams, maps, sides, summary, history, keyboard, liveSession];
+const FEATURES = [teams, maps, sides, summary, history, keyboard, liveSession, archive];
 const enabled = f => APP_CONFIG.features[f.id] !== false;
 
 async function boot() {

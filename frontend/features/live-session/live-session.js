@@ -7,12 +7,12 @@
 import { $, esc, toast } from '../../shared/dom.js';
 import { state } from '../../shared/state.js';
 import { LS, load, save } from '../../shared/storage.js';
+import { getSupabase } from '../../data/supabase.js';
 import { setStep } from '../../app/steps.js';
 import { on, emit } from '../../shared/bus.js';
 
 export const id = 'liveSession';
 
-const SUPABASE_ESM = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 const PUSH_DEBOUNCE_MS = 300;
 const MATCH_SYNC_MS = 8000;
 const HEARTBEAT_MS = 30000;        // 방장 생존 신호 (updated_at 갱신 → 목록의 "활동 중" 판별)
@@ -27,6 +27,7 @@ let matchTimer = null;
 let heartbeatTimer = null;
 let viewerTimer = null;    // 뷰어 생존 확인 폴링 (모바일 WS 끊김 대비)
 let endedNotified = false; // 종료 안내 중복 방지
+let sessionStartAt = '';   // 방장: 이 세션 시작 시각 — 이후 저장된 기록만 세션에 push
 let lastPushed = new Map(); // matchId -> JSON string (방장 diff 용)
 
 /* ---------- 공통 ---------- */
@@ -39,15 +40,16 @@ const rnd36 = len => {
 
 async function getClient() {
   if (client) return client;
-  let env = null;
-  try { env = (await import('../../app/env.js')).ENV; } catch { /* env.js 없음 */ }
-  if (!env?.SUPABASE_URL || !env?.SUPABASE_PUBLISHABLE_KEY) {
-    toast('Supabase 설정이 없습니다 — frontend/app/env.js (env.example.js 참고)');
-    throw new Error('live-session: env.js 없음');
-  }
-  const { createClient } = await import(SUPABASE_ESM);
-  client = createClient(env.SUPABASE_URL, env.SUPABASE_PUBLISHABLE_KEY);
-  return client;
+  try { client = await getSupabase(); return client; }
+  catch (e) { toast('Supabase 설정이 없습니다 — frontend/app/env.js (env.example.js 참고)'); throw e; }
+}
+
+/* LS.liveHost 항목: {token, at} (at = 세션 시작 시각 — 세션 중 저장된 기록만 push 하는 기준)
+   구버전(문자열 토큰)도 호환 */
+function hostEntry(sid) {
+  const v = load(LS.liveHost, {})[sid];
+  if (!v) return null;
+  return typeof v === 'string' ? { token: v, at: '' } : v;
 }
 
 function snapshot() {
@@ -83,7 +85,8 @@ async function startSession() {
     const { error } = await sb.rpc('create_session', { p_id: sid, p_host_token: token, p_state: snapshot() });
     if (error) throw error;
     sessionId = sid; hostToken = token;
-    const tokens = load(LS.liveHost, {}); tokens[sid] = token; save(LS.liveHost, tokens);
+    sessionStartAt = new Date().toISOString();
+    const tokens = load(LS.liveHost, {}); tokens[sid] = { token, at: sessionStartAt }; save(LS.liveHost, tokens);
     location.hash = '#/s/' + sid;
     startHostLoops(); renderBar(); setLiveDot(true);
     await pushMatches();
@@ -117,7 +120,9 @@ async function pushMatches() {
   if (!sessionId || !hostToken) return;
   try {
     const sb = await getClient();
-    const cur = new Map(state.history.map(h => [h.id, JSON.stringify(h)]));
+    // 이 세션 시작 이후 저장된 기록만 세션에 올림 (과거 기록으로 세션 전적 오염 방지)
+    const sessionRecords = state.history.filter(h => String(h.createdAt) >= sessionStartAt);
+    const cur = new Map(sessionRecords.map(h => [h.id, JSON.stringify(h)]));
     for (const [mid, json] of cur) {
       if (lastPushed.get(mid) !== json) {
         await sb.rpc('add_session_match',
@@ -134,21 +139,21 @@ async function pushMatches() {
   } catch (e) { console.error(e); }
 }
 
-/* 방송 종료: 시청자에게 종료 알림(ended) push → 세션 DB 삭제 → 로비 목록에서 즉시 제거.
-   방장의 로컬 상태/기록은 그대로 보존된다. */
+/* 방송 종료 = 아카이브: ended_at 마킹(세션·경기 기록은 영구 보존, 📊 전적에서 조회).
+   시청자는 ended 플래그를 받고 로비로 안내된다. */
 async function endSession() {
   const sid = sessionId, token = hostToken;
   clearTimeout(pushTimer); clearInterval(matchTimer); clearInterval(heartbeatTimer);
-  sessionId = null; hostToken = null; lastPushed = new Map();
+  await pushMatches(); // 마지막 기록까지 올리고 종료
+  sessionId = null; hostToken = null; lastPushed = new Map(); sessionStartAt = '';
   try {
     const sb = await getClient();
-    await sb.rpc('update_session_state', { p_id: sid, p_host_token: token, p_state: { ended: true } });
     await sb.rpc('end_session', { p_id: sid, p_host_token: token });
     const tokens = load(LS.liveHost, {}); delete tokens[sid]; save(LS.liveHost, tokens);
   } catch (e) { console.error(e); }
   location.hash = '';
   renderBar();
-  toast('방송 종료 — 시청자는 로비로 안내되고, 내 기록은 보존됩니다');
+  toast('방송 종료 — 세션과 경기 기록은 📊 전적에 보존됩니다');
   showLobby(); // 방송 끝 → 로비로
 }
 
@@ -277,11 +282,12 @@ async function refreshLobby() {
     const since = new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString();
     const { data, error } = await sb.from('sessions')
       .select('id, updated_at, state')
+      .is('ended_at', null) // 아카이브(종료)된 세션 제외
       .gt('updated_at', since)
       .order('updated_at', { ascending: false })
       .limit(12);
     if (error) throw error;
-    renderLobbyCards((data || []).filter(s => !s.state?.ended)); // 종료 처리 중인 방송 제외
+    renderLobbyCards((data || []).filter(s => !s.state?.ended));
   } catch (e) { console.error(e); renderLobbyCards([]); }
 }
 
@@ -307,10 +313,10 @@ function renderLobbyCards(list) {
 
 /* 목록에서 세션 선택: 내 세션이면 송출 재개, 아니면 시청 입장 */
 async function selectSession(sid) {
-  const tokens = load(LS.liveHost, {});
+  const he = hostEntry(sid);
   location.hash = '#/s/' + sid;
-  if (tokens[sid]) {
-    sessionId = sid; hostToken = tokens[sid];
+  if (he) {
+    sessionId = sid; hostToken = he.token; sessionStartAt = he.at || '';
     startHostLoops(); schedulePush(); renderBar();
     toast('내 세션 송출 재개!');
   } else {
@@ -349,7 +355,9 @@ export async function init() {
   });
   // 로비 버튼
   $('#btnLobbyNew')?.addEventListener('click', startSession);
+  $('#btnLobbyArchive')?.addEventListener('click', () => { hideLobby(); emit('archive:open'); });
   $('#btnLobbyLocal')?.addEventListener('click', () => { hideLobby(); toast('로컬 모드 — 헤더 🔴 라이브로 언제든 로비 복귀'); });
+  on('lobby:open', showLobby); // 전적 화면 뒤로가기 등
 
   on('state:changed', schedulePush);                       // 방장: 상태 push
   on('history:changed', () => { if (hostToken) pushMatches(); }); // 방장: 기록 push
@@ -357,9 +365,9 @@ export async function init() {
   const sid = parseHash();
   if (sid) {
     // 공유 링크로 진입 → 로비 건너뛰고 바로 해당 세션으로
-    const tokens = load(LS.liveHost, {});
-    if (tokens[sid]) { // 방장이 새로고침/재접속 — 송출 재개
-      sessionId = sid; hostToken = tokens[sid];
+    const he = hostEntry(sid);
+    if (he) { // 방장이 새로고침/재접속 — 송출 재개
+      sessionId = sid; hostToken = he.token; sessionStartAt = he.at || '';
       startHostLoops(); schedulePush();
     } else {
       await joinAsViewer(sid);

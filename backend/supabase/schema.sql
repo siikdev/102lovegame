@@ -82,8 +82,28 @@ begin
 end;
 $$;
 
--- [RPC] 방송 종료 — 방장만. 세션 행 삭제 (session_matches 는 cascade 삭제)
+-- 아카이브: 종료된 세션과 그 경기 기록은 영구 보존 (전적/통계의 원천)
+alter table public.sessions add column if not exists ended_at timestamptz;
+create index if not exists idx_session_matches_session on public.session_matches(session_id);
+
+-- [RPC] 방송 종료 — 방장만. 삭제가 아니라 종료 마킹(아카이브). 기록은 보존
 create or replace function public.end_session(p_id text, p_host_token text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update sessions
+    set ended_at = now(), updated_at = now(),
+        state = jsonb_set(coalesce(state, '{}'::jsonb), '{ended}', 'true'::jsonb)
+  where id = p_id and host_token = p_host_token and ended_at is null;
+  return found;
+end;
+$$;
+
+-- [RPC] 세션 완전 삭제 — 방장만 (테스트 정리용; 평소엔 end_session 사용)
+create or replace function public.delete_session(p_id text, p_host_token text)
 returns boolean
 language plpgsql
 security definer
