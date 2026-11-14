@@ -147,21 +147,29 @@ async function pushMatches() {
   } catch (e) { console.error(e); }
 }
 
-/* 방송 종료 = 아카이브: ended_at 마킹(세션·경기 기록은 영구 보존, 📊 전적에서 조회).
-   시청자는 ended 플래그를 받고 로비로 안내된다. */
+/* 방송 종료:
+   - 저장된 경기가 있으면 아카이브(ended_at 마킹 — 📊 전적에 영구 보존)
+   - 경기 0판이면 세션을 남길 이유가 없으니 즉시 삭제 (빈 세션 쌓임 방지)
+   시청자는 ended 플래그/행 삭제를 감지해 로비로 안내된다. */
 async function endSession() {
   const sid = sessionId, token = hostToken;
   clearTimeout(pushTimer); clearInterval(matchTimer); clearInterval(heartbeatTimer);
   await pushMatches(); // 마지막 기록까지 올리고 종료
+  const hasRecords = lastPushed.size > 0;
   sessionId = null; hostToken = null; lastPushed = new Map(); sessionStartAt = '';
   try {
     const sb = await getClient();
-    await sb.rpc('end_session', { p_id: sid, p_host_token: token });
+    if (hasRecords) await sb.rpc('end_session', { p_id: sid, p_host_token: token });
+    else {
+      await sb.rpc('end_session', { p_id: sid, p_host_token: token }); // 뷰어에게 종료 알림(ended) 먼저
+      await sb.rpc('delete_session', { p_id: sid, p_host_token: token });
+    }
     const tokens = load(LS.liveHost, {}); delete tokens[sid]; save(LS.liveHost, tokens);
   } catch (e) { console.error(e); }
   location.hash = '';
   renderBar();
-  toast('방송 종료 — 세션과 경기 기록은 📊 전적에 보존됩니다');
+  toast(hasRecords ? '방송 종료 — 세션과 경기 기록은 📊 전적에 보존됩니다'
+                   : '방송 종료 — 저장된 경기가 없어 세션을 남기지 않았어요');
   showLobby(); // 방송 끝 → 로비로
 }
 
