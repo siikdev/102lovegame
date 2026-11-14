@@ -7,6 +7,8 @@
 .live-dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none}
 .live-dot.on{background:var(--red);box-shadow:0 0 8px rgba(255,70,85,.8);animation:livepulse 1.2s ease infinite}
 @keyframes livepulse{50%{opacity:.5}}
+.live-bar .live-item{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.live-bar .live-item .hint{margin-left:4px}
 
 /* 뷰어 모드: 보기만 — 조작 전면 차단 (data-live-allow 만 예외) */
 body.live-viewer main .btn:not([data-live-allow]),

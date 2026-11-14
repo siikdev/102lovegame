@@ -4,7 +4,7 @@
    뷰어: #/s/<id> 접속 → 초기 fetch + Realtime(postgres_changes) 구독, 조작 불가
    Supabase 접속 정보는 app/env.js (gitignore) — 없으면 기능이 조용히 비활성.
    supabase-js 는 세션을 실제로 쓸 때만 CDN 에서 동적 로드 (기본 앱은 무의존성 유지) */
-import { $, toast } from '../../shared/dom.js';
+import { $, esc, toast } from '../../shared/dom.js';
 import { state } from '../../shared/state.js';
 import { LS, load, save } from '../../shared/storage.js';
 import { setStep } from '../../app/steps.js';
@@ -15,6 +15,8 @@ export const id = 'liveSession';
 const SUPABASE_ESM = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 const PUSH_DEBOUNCE_MS = 300;
 const MATCH_SYNC_MS = 8000;
+const HEARTBEAT_MS = 30000;        // 방장 생존 신호 (updated_at 갱신 → 목록의 "활동 중" 판별)
+const ACTIVE_WINDOW_MS = 30 * 60 * 1000; // 최근 30분 내 활동 세션만 목록에 표시
 
 let client = null;        // supabase client (lazy)
 let sessionId = null;
@@ -22,6 +24,7 @@ let hostToken = null;     // 방장일 때만 존재
 let channel = null;       // 뷰어 realtime 채널
 let pushTimer = null;
 let matchTimer = null;
+let heartbeatTimer = null;
 let lastPushed = new Map(); // matchId -> JSON string (방장 diff 용)
 
 /* ---------- 공통 ---------- */
@@ -88,6 +91,8 @@ async function startSession() {
 function startHostLoops() {
   clearInterval(matchTimer);
   matchTimer = setInterval(pushMatches, MATCH_SYNC_MS); // 인라인 수정 등 놓치는 변화 안전망
+  clearInterval(heartbeatTimer);
+  heartbeatTimer = setInterval(schedulePush, HEARTBEAT_MS); // 하트비트 (세션 목록 노출 유지)
 }
 
 function schedulePush() {
@@ -127,7 +132,7 @@ async function pushMatches() {
 }
 
 function endSession() {
-  clearTimeout(pushTimer); clearInterval(matchTimer);
+  clearTimeout(pushTimer); clearInterval(matchTimer); clearInterval(heartbeatTimer);
   sessionId = null; hostToken = null; lastPushed = new Map();
   location.hash = '';
   renderBar();
@@ -204,6 +209,57 @@ function leaveSession() {
   location.reload(); // 내 로컬 상태로 깔끔히 복귀
 }
 
+/* ---------- 세션 브라우저 (링크 없이도 목록에서 골라 입장) ---------- */
+async function showBrowser(auto = false) {
+  if (sessionId) return; // 이미 송출/시청 중
+  try {
+    const sb = await getClient();
+    const since = new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString();
+    const { data, error } = await sb.from('sessions')
+      .select('id, updated_at, state')
+      .gt('updated_at', since)
+      .order('updated_at', { ascending: false })
+      .limit(10);
+    if (error) throw error;
+    const list = data || [];
+    if (auto && !list.length) return; // 접속 시 자동 체크: 없으면 조용히
+    renderBrowser(list);
+  } catch (e) { console.error(e); if (!auto) toast('라이브 목록을 불러오지 못했습니다'); }
+}
+
+function renderBrowser(list) {
+  const bar = $('#liveBar'); if (!bar || sessionId) return;
+  bar.hidden = false;
+  const tokens = load(LS.liveHost, {});
+  const items = list.length ? list.map(s => {
+    const title = Array.isArray(s.state?.teamNames) ? s.state.teamNames.join(' vs ') : s.id;
+    const min = Math.max(0, Math.round((Date.now() - new Date(s.updated_at).getTime()) / 60000));
+    const mine = tokens[s.id] ? ' 🎙 내 세션' : '';
+    return `<button class="btn ghost sm live-item" data-sid="${esc(s.id)}">👁 ${esc(title)}${mine} <span class="hint">${min ? min + '분 전' : '방금'}</span></button>`;
+  }).join('') : `<span class="hint">진행 중인 라이브가 없습니다</span>`;
+  bar.innerHTML = `<span class="live-dot on"></span><b>라이브</b>
+    <button class="btn teal sm" id="btnLiveNew" data-live-allow>🔴 새 세션 시작</button>
+    ${items}
+    <button class="btn ghost sm" id="btnLiveHide" data-live-allow>닫기</button>`;
+  $('#btnLiveNew').addEventListener('click', startSession);
+  $('#btnLiveHide').addEventListener('click', () => { bar.hidden = true; });
+  bar.querySelectorAll('.live-item').forEach(b =>
+    b.addEventListener('click', () => selectSession(b.dataset.sid)));
+}
+
+/* 목록에서 세션 선택: 내 세션이면 송출 재개, 아니면 시청 입장 */
+async function selectSession(sid) {
+  const tokens = load(LS.liveHost, {});
+  location.hash = '#/s/' + sid;
+  if (tokens[sid]) {
+    sessionId = sid; hostToken = tokens[sid];
+    startHostLoops(); schedulePush(); renderBar();
+    toast('내 세션 송출 재개!');
+  } else {
+    await joinAsViewer(sid);
+  }
+}
+
 /* ---------- UI ---------- */
 function renderBar() {
   const bar = $('#liveBar'); if (!bar) return;
@@ -228,7 +284,11 @@ function renderBar() {
 
 /* ---------- init ---------- */
 export async function init() {
-  $('#btnLive')?.addEventListener('click', startSession);
+  // 라이브 버튼: 송출 중이면 링크 복사, 아니면 세션 브라우저 열기
+  $('#btnLive')?.addEventListener('click', () => {
+    if (sessionId && hostToken) copyLink();
+    else showBrowser(false);
+  });
   on('state:changed', schedulePush);                       // 방장: 상태 push
   on('history:changed', () => { if (hostToken) pushMatches(); }); // 방장: 기록 push
   const sid = parseHash();
@@ -240,6 +300,9 @@ export async function init() {
     } else {
       await joinAsViewer(sid);
     }
+    renderBar();
+  } else {
+    renderBar();
+    showBrowser(true); // 접속 시 진행 중 라이브가 있으면 목록 자동 표시
   }
-  renderBar();
 }
