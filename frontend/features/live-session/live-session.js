@@ -25,6 +25,8 @@ let channel = null;       // 뷰어 realtime 채널
 let pushTimer = null;
 let matchTimer = null;
 let heartbeatTimer = null;
+let viewerTimer = null;    // 뷰어 생존 확인 폴링 (모바일 WS 끊김 대비)
+let endedNotified = false; // 종료 안내 중복 방지
 let lastPushed = new Map(); // matchId -> JSON string (방장 diff 용)
 
 /* ---------- 공통 ---------- */
@@ -151,6 +153,33 @@ async function endSession() {
 }
 
 /* ---------- 뷰어 (시청) ---------- */
+/* 종료 감지 공통 처리 */
+function endedByHost() {
+  if (endedNotified) return;
+  endedNotified = true;
+  toast('방송이 종료되었습니다 — 로비로 이동합니다');
+  setTimeout(leaveSession, 1500);
+}
+
+/* 생존 확인: 세션 행이 사라졌거나 ended 면 로비로.
+   모바일에서 화면 꺼짐 등으로 Realtime 이벤트를 놓쳐도 10초 내 복구 */
+async function checkAlive(sid) {
+  if (!state.liveViewer || endedNotified) return;
+  try {
+    const sb = await getClient();
+    const { data } = await sb.from('sessions').select('state').eq('id', sid).maybeSingle();
+    if (!data || data.state?.ended) endedByHost();
+  } catch { /* 일시 네트워크 오류는 무시 */ }
+}
+
+function startViewerWatch(sid) {
+  clearInterval(viewerTimer);
+  viewerTimer = setInterval(() => checkAlive(sid), 10000);
+  document.addEventListener('visibilitychange', () => { // 화면 복귀 즉시 확인
+    if (document.visibilityState === 'visible') checkAlive(sid);
+  });
+}
+
 async function joinAsViewer(sid) {
   try {
     const sb = await getClient();
@@ -173,6 +202,7 @@ async function joinAsViewer(sid) {
         { event: '*', schema: 'public', table: 'session_matches', filter: 'session_id=eq.' + sid },
         p => applyMatchChange(p))
       .subscribe(status => setLiveDot(status === 'SUBSCRIBED'));
+    startViewerWatch(sid);
     renderBar();
     toast('라이브 시청 시작!');
   } catch (e) {
@@ -184,11 +214,7 @@ async function joinAsViewer(sid) {
 
 function applyState(s) {
   if (!s) return;
-  if (s.ended) { // 방장이 방송을 종료함
-    toast('방송이 종료되었습니다 — 로비로 이동합니다');
-    setTimeout(leaveSession, 1500);
-    return;
-  }
+  if (s.ended) { endedByHost(); return; } // 방장이 방송을 종료함
   state.players = s.players ?? state.players;
   state.tierNames = s.tierNames ?? state.tierNames;
   state.teamNames = s.teamNames ?? state.teamNames;
@@ -221,6 +247,7 @@ function applyMatchChange(p) {
 }
 
 function leaveSession() {
+  clearInterval(viewerTimer);
   channel?.unsubscribe();
   location.hash = '';
   location.reload(); // 내 로컬 상태로 깔끔히 복귀

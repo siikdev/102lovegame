@@ -37,9 +37,18 @@ jobs:
           };
           EOF
 
+      - name: 사이트 루트 조립 — frontend/ 를 루트로 (URL 에서 /frontend 제거)
+        run: |
+          mkdir dist
+          cp -r frontend/* dist/
+          cp -r legacy dist/legacy
+          # 옛 /frontend/ 링크 호환용 리다이렉트
+          mkdir -p dist/frontend
+          printf '<!DOCTYPE html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=../">' > dist/frontend/index.html
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: 'dist'
       - id: deployment
         uses: actions/deploy-pages@v4

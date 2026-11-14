@@ -37,7 +37,7 @@
 ├── backend/                 백엔드 (계획 — README 에 API 계약) + supabase/schema.sql (라이브 세션 DB)
 ├── docs/                   이 문서 · ADR(의사결정 기록)
 ├── legacy/                 초기 단일 HTML (기능 동일 · 참고용)
-└── .github/workflows/      Pages 배포(Secrets→env.js 주입) · Supabase keep-alive  ※ 플랫폼 고정 경로
+└── .github/workflows/      Pages 배포(Secrets→env.js 주입, frontend/ 를 사이트 루트로 조립) · keep-alive  ※ 플랫폼 고정 경로
 ```
 
 ### live-session 동작 (ADR-0002)
